@@ -2,6 +2,8 @@ import * as React from 'react';
 import { findDOMNode } from 'react-dom';
 import { Video } from './Video';
 
+import Test from '../../Test';
+
 // video player styles
 import './Player.css';
 
@@ -18,12 +20,13 @@ interface PlayerProps {
 }
 
 interface PlayerState {
+    playing?: boolean;
+    ready?: boolean;
+    duration?: number;
     currentTime?: number;
-    videoDuration?: number;
-    progressPercent?: number;
+    videoProgress?: number;
+
     bufferPercent?: number;
-    videoPaused?: boolean;
-    isVideoLoaded?: boolean;
     progressDragging?: boolean;
     fullscreen?: boolean;
     longestVideoNode?: HTMLVideoElement | null;
@@ -43,15 +46,11 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         super();
 
         this.state = {
+            playing: false,
+            ready: false,
+            duration: 0,
             currentTime: 0,
-            videoDuration: 0,
-            progressPercent: 0,
-            bufferPercent: 0,
-            videoPaused: true,
-            isVideoLoaded: false,
-            progressDragging: false,
-            fullscreen: false,
-            longestVideoNode: null
+            videoProgress: 0
         };
 
         this.handleCanPlay = this.handleCanPlay.bind(this);
@@ -105,15 +104,11 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
 
     resetState() {
         this.setState({
+            playing: false,
+            ready: false,
+            duration: 0,
             currentTime: 0,
-            videoDuration: 0,
-            progressPercent: 0,
-            bufferPercent: 0,
-            videoPaused: true,
-            isVideoLoaded: false,
-            progressDragging: false,
-            fullscreen: false,
-            longestVideoNode: null
+            videoProgress: 0
         });
     }
 
@@ -132,33 +127,48 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     }
 
     handleCanPlay(res: { isReady: boolean, readyState: number }) {
+        this.setState({
+            ready: res.isReady
+        });
         console.log('handleCanPlay. Video is ready', res.readyState);
     }
 
     handleDurationChange(res: { duration: number }) {
+        this.setState({
+            duration: res.duration
+        });
         console.log('handleDurationChange', res.duration);
     }
 
     handleTimeUpdate(res: { currentTime: number, percent: number }) {
+        this.setState({
+            currentTime: res.currentTime,
+            videoProgress: res.percent
+        });
         console.log('handleTimeUpdate', res.currentTime, res.percent);
     }
 
     handlePlaying(res: { playing: boolean }) {
+        this.setState({
+            playing: res.playing
+        });
         console.log('handlePlaying', res.playing);
     }
 
     handleProgress(res: { percent: number}) {
+        this.setState({
+            bufferPercent: res.percent
+        });
         console.log('handleProgress', res.percent);
     }
 
     restart(e: any) {
         e.stopPropagation();
 
-        if (this.state.isVideoLoaded === false) {
+        if (!this.state.ready) {
             return;
         }
     }
-
 
     handleMouseDown(e: any) {
         e.preventDefault();
@@ -173,7 +183,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     handleScrub(e: any) {
         e.stopPropagation();
 
-        if (!this.state.progressDragging || this.state.isVideoLoaded === false) {
+        if (!this.state.progressDragging || this.state.ready === false) {
             return;
         }
 
@@ -182,15 +192,15 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         const duration = this.state.longestVideoNode && this.state.longestVideoNode.duration || 0;
         const currentTime = (mousePosition / this.progress.offsetWidth) * duration;
 
-        const progressPercent = (currentTime / duration) * 100;
+        const videoProgress = (currentTime / duration) * 100;
 
-        return progressPercent;
+        return videoProgress;
     }
 
     handleProgressClick(e: any) {
         e.stopPropagation();
 
-        if (this.state.isVideoLoaded === false) {
+        if (this.state.ready === false) {
             return;
         }
 
@@ -205,7 +215,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     handleKeyUp(e: any) {
         e.preventDefault();
 
-        if (this.state.isVideoLoaded === false) {
+        if (this.state.ready === false) {
             return;
         }
 
@@ -245,16 +255,26 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     }
 
     render () {
-        const { isVideoLoaded, videoPaused, fullscreen } = this.state;
+        const { ready, playing, fullscreen } = this.state;
         const { playlist } = this.props;
 
         const videoWrapperClasses = [
             'pd-player',
-            isVideoLoaded ? 'pd-player__ready' : 'pd-player__notready',
-            videoPaused ? 'pd-player__paused' : null,
+            ready ? 'pd-player__ready' : 'pd-player__notready',
+            playing ? 'pd-player__paused' : null,
             fullscreen ? 'pd-player__fullscreen' : null,
             playlist && playlist.length === 1 ? null : 'pd-player__pip'
         ].filter((cls) => cls !== null).join(' ');
+
+        const time = getDurationTime((this.state.duration || 0) - (this.state.currentTime || 0));
+
+        const bufferStyle = {
+            width: `${this.state.bufferPercent}%`
+        };
+
+        const progressStyle = {
+            flexBasis: `${this.state.videoProgress}%`
+        };
 
         console.log('Player', this);
 
@@ -271,15 +291,16 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             >
 
                 {/* ZDE BUDE VIDEOPŘEHRÁVAČ*/}
-                <Video 
-                    video={this.props.playlist[0]} 
+                <Video
+                    ref={(node: any) => this.video = node}
+                    video={this.props.playlist[0]}
                     handleCanPlay={this.handleCanPlay}
                     handleDurationChange={this.handleDurationChange}
                     handleTimeUpdate={this.handleTimeUpdate}
                     handlePlaying={this.handlePlaying}
                     handleProgress={this.handleProgress}
                 />
-
+                <Test/>
                 <div className="pd-player__controls">
                     <div 
                         className="progress"
@@ -290,21 +311,21 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                     >
                         <div
                             className="buffer__filled"
-                            style={{width: `${this.state.bufferPercent}%`}}
+                            style={bufferStyle}
                         />
-                        <div 
+                        <div
                             className="progress__filled"
-                            style={{flexBasis: `${this.state.progressPercent}%`}}
+                            style={progressStyle}
                         />
                     </div>
 
                     <div className="pd-player__controls-holder">
                         <button 
-                            className={`pd-player__button button-${videoPaused ? 'play' : 'pause'} toggle ${!isVideoLoaded ? 'disabled' : ''}`}
+                            className={`pd-player__button button-${playing ? 'play' : 'pause'} toggle ${!ready ? 'disabled' : ''}`}
                             title="Play / pauza"
                             //onClick={this.togglePlay}
                         >
-                            {videoPaused ? '▶' : '||'}
+                            {playing ? '▶' : '||'}
                         </button>
 
                         <button
@@ -320,13 +341,13 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                                 {
                                     playlist && playlist.length > 1
                                         ? null
-                                        : getDurationTime((this.state.videoDuration || 0) - (this.state.currentTime || 0))
+                                        : time
                                 }
                             </strong>
                         </div>
 
                         <button
-                            className={`pd-player__button button-fullscreen ${!isVideoLoaded ? 'disabled' : ''}`}
+                            className={`pd-player__button button-fullscreen ${!ready ? 'disabled' : ''}`}
                             onClick={this.toggleFullscreen}
                         >
                             <i className="fa fa-arrows-alt" aria-hidden="true" />
@@ -342,7 +363,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         e.stopPropagation();
         e.preventDefault();
         
-        if (this.state.isVideoLoaded === false) {
+        if (this.state.ready === false) {
             return;
         }
 

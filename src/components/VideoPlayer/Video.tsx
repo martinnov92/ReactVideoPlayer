@@ -46,17 +46,23 @@ export class Video extends React.PureComponent<VideoProps, any> {
 
         if (this.video.readyState > 0) {
             if (this.props.handleCanPlay) {
-                return this.props.handleCanPlay({ isReady: true, readyState: readyState });
+                this.props.handleCanPlay({ isReady: true, readyState: readyState });
             }
+
+            return { isReady: true, readyState };
         }
+
+        return { isReady: false, readyState: 0 };
     }
 
     handleDurationChange() {
         const videoDuration = this.video.duration;
 
         if (this.props.handleDurationChange) {
-            return this.props.handleDurationChange({ duration: videoDuration });
+            this.props.handleDurationChange({ duration: videoDuration });
         }
+
+        return { duration: videoDuration };
     }
 
     handleTimeUpdate() {
@@ -64,16 +70,20 @@ export class Video extends React.PureComponent<VideoProps, any> {
         const percent = (currentTime / this.video.duration) * 100;
 
         if (this.props.handleTimeUpdate) {
-            return this.props.handleTimeUpdate({ currentTime, percent });
+            this.props.handleTimeUpdate({ currentTime, percent });
         }
+
+        return { currentTime, percent }
     }
 
     handlePlaying() {
         const playing = !this.video.paused;
 
         if (this.props.handlePlaying) {
-            return this.props.handlePlaying({ playing });
+            this.props.handlePlaying({ playing });
         }
+
+        return { playing };
     }
 
     handleProgress() {
@@ -97,15 +107,17 @@ export class Video extends React.PureComponent<VideoProps, any> {
         }
 
         if (this.props.handleProgress) {
-            return this.props.handleProgress({ percent });
+            this.props.handleProgress({ percent });
         }
+
+        return { percent };
     }
 
     render() {
         const { video, timeLabel } = this.props;
         const duration = this.video ? this.video.duration : 0;
         const currentTime = this.video ? this.video.currentTime : 0;
-        const remainingTime = duration - currentTime;
+        const remainingTime = getDurationTime(duration - currentTime);
 
         console.log('Video', this);
 
@@ -134,7 +146,7 @@ export class Video extends React.PureComponent<VideoProps, any> {
                     : <span className="pd-player__video-time">
                         {
                             this.video
-                            ? getDurationTime(remainingTime) + ' / ' + getDurationTime(this.video.duration)
+                            ? remainingTime + ' / ' + getDurationTime(this.video.duration)
                             : '00:00'
                         }
                     </span>
