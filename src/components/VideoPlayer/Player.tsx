@@ -277,6 +277,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                     buffer={this.state.bufferPercent}
                     playing={this.state.playing || false}
                     duration={duration}
+                    progress={this.state.videoProgress}
                 />
             </div>
         );
