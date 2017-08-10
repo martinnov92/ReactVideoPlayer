@@ -1,2 +1,2 @@
-﻿import { Player, getDurationTime } from './Player';
-export { Player, getDurationTime };
+﻿import { Player } from './Player';
+export { Player };

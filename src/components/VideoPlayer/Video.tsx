@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { getDurationTime } from './';
+import { getDurationTime } from '../../utils/VideoUtils';
 
 interface VideoType {
     key: string;
@@ -8,18 +8,21 @@ interface VideoType {
 }
 
 interface CanPlayInterface {
+    name: string;
     isReady: boolean;
     readyState: number;
+    videoNode: HTMLVideoElement;
 }
 
 interface VideoProps {
+    name: string;
     video: VideoType;
     timeLabel?: boolean;
     handleCanPlay?: (res: CanPlayInterface) => void;
-    handleDurationChange?: (res: { duration: number}) => void;
-    handleTimeUpdate?: (res: { currentTime: number, percent: number }) => void;
-    handlePlaying?: (res: { playing: boolean }) => void;
-    handleProgress?: (res: { percent: number }) => void;
+    handleDurationChange?: (res: { name: string, duration: number}) => void;
+    handleTimeUpdate?: (res: { name: string, currentTime: number, percent: number }) => void;
+    handlePlaying?: (res: { name: string, playing: boolean }) => void;
+    handleProgress?: (res: { name: string, percent: number }) => void;
 }
 
 // TODO add constant of readyState 0, 1, 2, 3
@@ -42,53 +45,63 @@ export class Video extends React.PureComponent<VideoProps, any> {
     }
 
     handleCanPlay() {
+        // is video ready?
         const readyState = this.video.readyState;
+        const { name } = this.props;
 
         if (this.video.readyState > 0) {
             if (this.props.handleCanPlay) {
-                this.props.handleCanPlay({ isReady: true, readyState: readyState });
+                this.props.handleCanPlay({ name, isReady: true, readyState: readyState, videoNode: this.video });
             }
 
-            return { isReady: true, readyState };
+            return { name, isReady: true, readyState, videoNode: this.video };
         }
 
-        return { isReady: false, readyState: 0 };
+        return { name, isReady: false, readyState: 0 };
     }
 
     handleDurationChange() {
+        // update video duration
         const videoDuration = this.video.duration;
+        const { name } = this.props;
 
         if (this.props.handleDurationChange) {
-            this.props.handleDurationChange({ duration: videoDuration });
+            this.props.handleDurationChange({ name, duration: videoDuration });
         }
 
-        return { duration: videoDuration };
+        return { name, duration: videoDuration };
     }
 
     handleTimeUpdate() {
+        // update time every second
+        const { name } = this.props;
         const currentTime = this.video.currentTime;
         const percent = (currentTime / this.video.duration) * 100;
 
         if (this.props.handleTimeUpdate) {
-            this.props.handleTimeUpdate({ currentTime, percent });
+            this.props.handleTimeUpdate({ name, currentTime, percent });
         }
 
-        return { currentTime, percent }
+        return { name, currentTime, percent };
     }
 
     handlePlaying() {
+        // is video playing?
         const playing = !this.video.paused;
+        const { name } = this.props;
 
         if (this.props.handlePlaying) {
-            this.props.handlePlaying({ playing });
+            this.props.handlePlaying({ name, playing });
         }
 
-        return { playing };
+        return { name, playing };
     }
 
     handleProgress() {
+        // buffer progress
         let percent = 0;
         const video = this.video;
+        const { name } = this.props;
         // add buffer for video player
         // based on MDN article:
         // https://developer.mozilla.org/en-US/Apps/Fundamentals/Audio_and_video_delivery/buffering_seeking_time_ranges
@@ -107,10 +120,10 @@ export class Video extends React.PureComponent<VideoProps, any> {
         }
 
         if (this.props.handleProgress) {
-            this.props.handleProgress({ percent });
+            this.props.handleProgress({ name, percent });
         }
 
-        return { percent };
+        return { name, percent };
     }
 
     render() {
@@ -119,7 +132,7 @@ export class Video extends React.PureComponent<VideoProps, any> {
         const currentTime = this.video ? this.video.currentTime : 0;
         const remainingTime = getDurationTime(duration - currentTime);
 
-        console.log('Video', this);
+        console.log('Video', this.video);
 
         return (
             <div className="pd-player__video viewer">

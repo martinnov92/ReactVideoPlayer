@@ -5,7 +5,7 @@ class Test extends React.Component<{}, {}> {
     console.log('Test', this);
     return (
       <div className="Test">
-          ahoj
+          {this.props.children}
       </div>
     );
   }
