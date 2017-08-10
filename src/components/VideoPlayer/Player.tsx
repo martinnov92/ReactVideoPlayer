@@ -1,7 +1,6 @@
 import * as React from 'react';
-import { findDOMNode } from 'react-dom';
 
-import { Video } from './Video';
+import { Video, VideoControls } from './';
 import { startFullscreen, exitFullscreen } from '../../utils/VideoUtils';
 import './Player.css';
 
@@ -37,13 +36,15 @@ interface PlayerState {
     longestVideoNode?: HTMLVideoElement | null;
 }
 
-// TODO: add more sources for different types of supported files
+// TODO:
+// * add more sources for different types of supported files
+// * check the longes video and save to state
+
 export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     static defaultProps = {
         resetCurrentTime: true
     };
 
-    video: any = {};
     progress: HTMLElement;
     focusablePlayer: HTMLElement;
 
@@ -54,6 +55,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             playing: false,
             currentTime: 0,
             videoProgress: 0,
+            bufferPercent: 0,
             video: {}
         };
 
@@ -61,20 +63,19 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         this.handleDurationChange = this.handleDurationChange.bind(this);
         this.handleTimeUpdate = this.handleTimeUpdate.bind(this);
         this.handlePlaying = this.handlePlaying.bind(this);
+        this.togglePlay = this.togglePlay.bind(this);
 
-        // ?????
-        this.addToVideoCollection = this.addToVideoCollection.bind(this);
-        this.handleKeyUp = this.handleKeyUp.bind(this);
-        this.handleVideoMouseLeave = this.handleVideoMouseLeave.bind(this);
-        this.handleProgress = this.handleProgress.bind(this);
-        this.handlePlaying = this.handlePlaying.bind(this);
         this.handleMouseDown = this.handleMouseDown.bind(this);
         this.handleMouseUp = this.handleMouseUp.bind(this);
         this.handleScrub = this.handleScrub.bind(this);
         this.handleProgressClick = this.handleProgressClick.bind(this);
+
+        // ?????
+        this.handleKeyUp = this.handleKeyUp.bind(this);
+        this.handleVideoMouseLeave = this.handleVideoMouseLeave.bind(this);
+        this.handleProgress = this.handleProgress.bind(this);
         this.restart = this.restart.bind(this);
         this.toggleFullscreen = this.toggleFullscreen.bind(this);
-        this.arrOfRefs = this.arrOfRefs.bind(this);
         this.resetState = this.resetState.bind(this);
     }
 
@@ -111,22 +112,9 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             playing: false,
             currentTime: 0,
             videoProgress: 0,
+            bufferPercent: 0,
             video: {}
         });
-    }
-
-    addToVideoCollection(node: HTMLVideoElement, key: string) {
-        // add refs to collection
-        this.video[key] = node;
-    }
-
-    arrOfRefs() {
-        const videoArr = Object
-            .keys(this.video)
-            .map((key) => this.video[key])
-            .filter((video) => video !== null);
-
-        return videoArr;
     }
 
     handleCanPlay(res: { name: string, isReady: boolean, readyState: number, videoNode: HTMLVideoElement }) {
@@ -180,50 +168,35 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         console.log('handleProgress', res.percent);
     }
 
+    togglePlay() {
+        Object
+        .keys(this.state.video)
+        .forEach((name: string) => {
+            if (this.state.video !== undefined) {
+                if (this.state.video[name].videoNode.paused) {
+                    this.state.video[name].videoNode.play();
+                } else {
+                    this.state.video[name].videoNode.pause();
+                }
+            }
+        });
+    }
+
     restart(e: any) {
         e.stopPropagation();
     }
 
     handleMouseDown(e: any) {
-        e.preventDefault();
-        e.stopPropagation();
     }
 
     handleMouseUp(e: any) {
-        e.preventDefault();
-        e.stopPropagation();
+
     }
 
     handleScrub(e: any) {
-        e.stopPropagation();
-
-        /*if (!this.state.progressDragging || this.state.ready === false) {
-            return;
-        }*/
-
-        const progressBar = findDOMNode(this.progress);
-        const mousePosition = e.clientX - progressBar.getBoundingClientRect().left;
-        const duration = this.state.longestVideoNode && this.state.longestVideoNode.duration || 0;
-        const currentTime = (mousePosition / this.progress.offsetWidth) * duration;
-
-        const videoProgress = (currentTime / duration) * 100;
-
-        return videoProgress;
     }
 
     handleProgressClick(e: any) {
-        e.stopPropagation();
-
-        /*if (this.state.ready === false) {
-            return;
-        }*/
-
-        const progressBar = findDOMNode(this.progress);
-        const mousePosition = e.clientX - progressBar.getBoundingClientRect().left;
-        const duration = this.state.longestVideoNode && this.state.longestVideoNode.duration || 0;
-        const scrubTime = (mousePosition / this.progress.offsetWidth) * duration;
-
-        return scrubTime;
     }
 
     handleKeyUp(e: any) {
@@ -234,7 +207,6 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         }*/
 
         this.focusablePlayer.focus();
-        const videos = this.arrOfRefs();
         let skip = this.state.currentTime || 0;
 
         switch (e.keyCode) {
@@ -250,15 +222,6 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             default:
                 return;
         }
-
-        for (let i = 0; i < videos.length; i++) {
-            if (skip > videos[i].duration) {
-                videos[i].currentTime = videos[i].duration;
-                continue;
-            }
-
-            videos[i].currentTime = skip;
-        }
     }
 
     handleVideoMouseLeave(e: any) {
@@ -271,6 +234,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     render () {
         const { playing, fullscreen } = this.state;
         const { playlist } = this.props;
+        const duration = this.state.video !== undefined ? this.state.video.hasOwnProperty('bunny') ? this.state.video['bunny'].duration : 0 : 0;
 
         const videoWrapperClasses = [
             'pd-player',
@@ -280,95 +244,40 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             playlist && playlist.length === 1 ? null : 'pd-player__pip'
         ].filter((cls) => cls !== null).join(' ');
 
-        //const time = getDurationTime((this.state.duration || 0) - (this.state.currentTime || 0));
-
-        const bufferStyle = {
-            width: `${this.state.bufferPercent}%`
-        };
-
-        const progressStyle = {
-            flexBasis: `${this.state.videoProgress}%`
-        };
-
         console.log('Player', this);
 
         return (
             <div
                 ref={(node: any) => this.focusablePlayer = node}
                 className={videoWrapperClasses}
-                //onClick={this.togglePlay}
+                onClick={this.togglePlay}
                 onKeyUp={this.handleKeyUp}
                 onMouseOver={this.handleKeyUp}
                 onMouseLeave={this.handleVideoMouseLeave}
                 tabIndex={-1}
                 data-videos={playlist && playlist.length}
             >
+                {
+                    playlist.map((video) => {
+                        return <Video
+                            key={video.key}
+                            name={video.key}
+                            video={video}
+                            handleCanPlay={this.handleCanPlay}
+                            handleDurationChange={this.handleDurationChange}
+                            handleTimeUpdate={this.handleTimeUpdate}
+                            handlePlaying={this.handlePlaying}
+                            handleProgress={this.handleProgress}
+                        />;
+                    })
+                }
 
-                {/* ZDE BUDE VIDEOPŘEHRÁVAČ*/}
-                <Video
-                    ref={(node: any) => this.video = node}
-                    name={this.props.playlist[0].key}
-                    video={this.props.playlist[0]}
-                    handleCanPlay={this.handleCanPlay}
-                    handleDurationChange={this.handleDurationChange}
-                    handleTimeUpdate={this.handleTimeUpdate}
-                    handlePlaying={this.handlePlaying}
-                    handleProgress={this.handleProgress}
+                <VideoControls
+                    currentTime={this.state.currentTime}
+                    buffer={this.state.bufferPercent}
+                    playing={this.state.playing || false}
+                    duration={duration}
                 />
-
-                <div className="pd-player__controls">
-                    <div 
-                        className="progress"
-                        ref={(node: any) => this.progress = node}
-                        onMouseDown={this.handleMouseDown}
-                        onMouseUp={this.handleMouseUp}
-                        onClick={this.handleProgressClick}
-                    >
-                        <div
-                            className="buffer__filled"
-                            style={bufferStyle}
-                        />
-                        <div
-                            className="progress__filled"
-                            style={progressStyle}
-                        />
-                    </div>
-
-                    <div className="pd-player__controls-holder">
-                        <button 
-                            className={`pd-player__button button-${playing ? 'play' : 'pause'} toggle}`}
-                            title="Play / pauza"
-                            //onClick={this.togglePlay}
-                        >
-                            {playing ? '▶' : '||'}
-                        </button>
-
-                        <button
-                            className="pd-player__button button-restart"
-                            title="Přehrát od začátku"
-                            onClick={this.restart}
-                        >
-                            <i className="fa fa-step-backward" aria-hidden="true" />
-                        </button>
-
-                        <div className="pd-player__controls-duration pd-pull-right">
-                            <strong>
-                                {
-                                    playlist && playlist.length > 1
-                                        ? null
-                                        : null //time
-                                }
-                            </strong>
-                        </div>
-
-                        <button
-                            className={`pd-player__button button-fullscreen`}
-                            onClick={this.toggleFullscreen}
-                        >
-                            <i className="fa fa-arrows-alt" aria-hidden="true" />
-                        </button>
-                    </div>
-                </div>
             </div>
         );
     }

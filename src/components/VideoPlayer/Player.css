@@ -1,12 +1,11 @@
 .pd-player {
   max-width: 100%;
-  padding-bottom: 75%;
+  height: 100%;
   background-color: #000;
   position: relative;
   overflow: hidden;
   border: 0;
 }
-
 .pd-player:before {
   content: '\f04c';
   position: absolute;
@@ -27,11 +26,20 @@
   color: #fff;
   z-index: 1;
 }
+.pd-player.pd-player__notready .progress__drag {
+  display: none;
+}
 .pd-player.pd-player__notready:before {
   content: '\f252';
   opacity: 1;
   animation: ease spin 1000ms infinite;
   transform-origin: center;
+}
+.pd-player.pd-player__progress-dragging .progress__drag {
+  width: 15px;
+  height: 15px;
+  margin-top: -5px;
+  border-radius: 50%;
 }
 .pd-player.pd-player__pip .pd-player__video {
   width: 50%;
@@ -42,6 +50,9 @@
 .pd-player.pd-player__pip[data-videos="4"] .pd-player__video {
   width: 50%;
   height: 50%;
+}
+.pd-player:hover .pd-player__controls {
+  padding: 0 10px;
 }
 .pd-player__fullscreen {
   max-width: 100%;
@@ -65,9 +76,8 @@
 .pd-player__video {
   width: 100%;
   height: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
+  position: relative;
+  display: inline-block;
   background-color: #000;
 }
 .pd-player__video .pd-player__video-time {
@@ -82,9 +92,6 @@
 .pd-player__video > video {
   width: 100%;
   height: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
 }
 .pd-player__controls {
   width: 100%;
@@ -102,6 +109,12 @@
   height: 40px;
   display: flex;
   order: 2;
+}
+.pd-player__controls:hover .progress__drag {
+  width: 15px;
+  height: 15px;
+  margin-top: -5px;
+  border-radius: 50%;
 }
 .pd-player__controls button,
 .pd-player__controls-duration {
@@ -133,33 +146,31 @@
   flex: 1;
   flex-basis: 100%;
   order: 1;
-  height: 10px;
+  height: 5px;
   transition: height 0.3s;
   background: rgba(0, 0, 0, 0.5);
-  cursor: auto;
+  cursor: pointer;
   z-index: 3;
 }
 .progress__filled {
-  width: 50%;
-  background: linear-gradient(150deg, #82bc28, green, lime);
-  background-size: 150%;
-  border-right: 1px solid green;
-  flex: 0;
-  flex-basis: 50%;
-  transition: flex-basis ease-in 10ms, border ease-in 100ms;
-  cursor: ew-resize;
-  z-index: 3;
+  width: 0;
+  background: #82bc28;
 }
 .buffer__filled {
   position: absolute;
   height: 100%;
   top: 0;
   left: 0;
-  opacity: .5;
   border-radius: 1px;
-  background: linear-gradient(130deg, #d1ffe5, #a5e5b3);
-  background-size: 200%;
-  z-index: 0;
+  background: #fff;
+  opacity: .5;
+  z-index: -1;
+}
+.progress__drag {
+  width: 5px;
+  height: 5px;
+  margin-top: 0;
+  background-color: #82bc28;
 }
 .pd-player__button.button-pause {
   padding-bottom: 3px;

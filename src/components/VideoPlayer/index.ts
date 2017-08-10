@@ -1,2 +1,4 @@
 ﻿import { Player } from './Player';
-export { Player };
+import { Video } from './Video';
+import { VideoControls } from './VideoControls';
+export { Player, Video, VideoControls };

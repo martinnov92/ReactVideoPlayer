@@ -8,13 +8,13 @@ export const getDurationTime = (secs: number, mili?: boolean) => {
     return `${mins < 10 ? '0' + mins : mins}:${secondsLeft < 10 ? '0' + secondsLeft : secondsLeft}`;
 };
 
-export const startFullscreen = (element: HTMLElement) =>{
+export const startFullscreen = (element: HTMLElement) => {
     if (element.requestFullscreen) {
         element.requestFullscreen();
     } else if (element.webkitRequestFullscreen) {
         element.webkitRequestFullscreen();
     }
-}
+};
 
 export const exitFullscreen = () => {
     if (document.exitFullscreen) {
@@ -22,4 +22,4 @@ export const exitFullscreen = () => {
     } else if (document.webkitExitFullscreen) {
         document.webkitExitFullscreen();
     }
-}
+};

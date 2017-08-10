@@ -10,7 +10,7 @@ class App extends React.Component<{}, {}> {
     console.log('App', this);
     return (
       <div className="App">
-        <Player playlist={[ {key: 'bunny', mp4: video } ]} />
+        <Player playlist={[ {key: 'bunny', mp4: video }, {key: 'bunny2', mp4: video } ]} />
       </div>
     );
   }
