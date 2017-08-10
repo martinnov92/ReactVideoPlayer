@@ -10,7 +10,7 @@ interface VideoType {
 interface CanPlayInterface {
     isReady: boolean;
     readyState: number;
-};
+}
 
 interface VideoProps {
     video: VideoType;
@@ -46,7 +46,7 @@ export class Video extends React.PureComponent<VideoProps, any> {
 
         if (this.video.readyState > 0) {
             if (this.props.handleCanPlay) {
-                return this.props.handleCanPlay({ isReady: true, readyState: readyState })
+                return this.props.handleCanPlay({ isReady: true, readyState: readyState });
             }
         }
     }
@@ -64,7 +64,7 @@ export class Video extends React.PureComponent<VideoProps, any> {
         const percent = (currentTime / this.video.duration) * 100;
 
         if (this.props.handleTimeUpdate) {
-            return this.props.handleTimeUpdate({ currentTime, percent })
+            return this.props.handleTimeUpdate({ currentTime, percent });
         }
     }
 
@@ -83,7 +83,9 @@ export class Video extends React.PureComponent<VideoProps, any> {
         // based on MDN article:
         // https://developer.mozilla.org/en-US/Apps/Fundamentals/Audio_and_video_delivery/buffering_seeking_time_ranges
 
-        if (this.video.readyState <= 0) return;
+        if (this.video.readyState <= 0) { 
+            return;
+        }
 
         // buffered end - return value in sec
         // buffered.length - number of time ranges in the object
