@@ -29,6 +29,7 @@ interface PlayerState {
     currentTime?: number;
     videoProgress?: number;
     video?: {video: VideoNode} | {};
+    leadVideo?: string; // TODO: uložit nejdelší video, podle kterého budu porovnávat, jestli uložit změnu času/bufferu, atd...
 
     bufferPercent?: number;
     progressDragging?: boolean;
@@ -69,6 +70,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         this.handleMouseUp = this.handleMouseUp.bind(this);
         this.handleScrub = this.handleScrub.bind(this);
         this.handleProgressClick = this.handleProgressClick.bind(this);
+        this.updateVideoTime = this.updateVideoTime.bind(this);
 
         // ?????
         this.handleKeyUp = this.handleKeyUp.bind(this);
@@ -117,6 +119,18 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         });
     }
 
+    handleDurationChange(res: { name: string, duration: number }) {
+        this.setState({
+            video: {
+                ...this.state.video as any,
+                [res.name]: {
+                    duration: res.duration
+                }
+            }
+        });
+        console.log('handleDurationChange', res.duration);
+    }
+
     handleCanPlay(res: { name: string, isReady: boolean, readyState: number, videoNode: HTMLVideoElement }) {
         const videoCopy = this.state.video && {...this.state.video[res.name]};
 
@@ -134,24 +148,17 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         console.log('handleCanPlay. Video is ready', res);
     }
 
-    handleDurationChange(res: { name: string, duration: number }) {
-        this.setState({
-            video: {
-                ...this.state.video as any,
-                [res.name]: {
-                    duration: res.duration
-                }
-            }
-        });
-        console.log('handleDurationChange', res.duration);
-    }
+    handleTimeUpdate(res: { name: string, currentTime: number }) {
+        // TODO: kontrolovat a ukládat stav delšího videa
+        // TODO: nahradit this.state.video['bunny'] this.state.video[this.state.leadVideo].duration
+        const duration = this.state.video && this.state.video['bunny'].duration;
+        const percent = (res.currentTime / duration) * 100;
 
-    handleTimeUpdate(res: { name: string, currentTime: number, percent: number }) {
         this.setState({
             currentTime: res.currentTime,
-            videoProgress: res.percent
+            videoProgress: percent
         });
-        console.log('handleTimeUpdate', res.currentTime, res.percent);
+        console.log('handleTimeUpdate', res.currentTime, percent);
     }
 
     handlePlaying(res: { name: string, playing: boolean }) {
@@ -162,41 +169,57 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     }
 
     handleProgress(res: { name: string, percent: number}) {
+        // TODO: zkontrolovat a ukládat pouze stav z délšího videa
+        // if (this.state.leadVideo !== res.name) { return; }
         this.setState({
             bufferPercent: res.percent
         });
         console.log('handleProgress', res.percent);
     }
 
-    togglePlay() {
-        Object
-        .keys(this.state.video)
-        .forEach((name: string) => {
-            if (this.state.video !== undefined) {
-                if (this.state.video[name].videoNode.paused) {
-                    this.state.video[name].videoNode.play();
-                } else {
-                    this.state.video[name].videoNode.pause();
-                }
-            }
+    handleProgressClick(res: { currentTime: number }) {
+        this.setState(() => {
+            this.updateVideoTime({ currentTime: res.currentTime });
+
+            return {
+                currentTime: res.currentTime
+            };
         });
+        console.log('handleProgressClick', res.currentTime);
+    }
+
+    handleMouseDown() {
+        this.setState({
+            playing: false
+        });
+
+        this.togglePlay('pause');
+    }
+
+    handleMouseUp(res?: { currentTime: number }) {
+        this.setState({
+            playing: true
+        });
+
+        this.togglePlay('play');
+    }
+
+    handleScrub(res: { currentTime: number }) {
+        // TODO: nahradit this.state.video['bunny'] this.state.video[this.state.leadVideo].duration
+        const duration = this.state.video && this.state.video['bunny'].duration;
+        const percent = (res.currentTime / duration) * 100;
+
+        // handleScrub, does not save currentTime, just pause video and update progress bar
+        // currentTime will be updated on mouseUp
+        this.setState({
+            videoProgress: percent,
+            currentTime: res.currentTime
+        });
+        console.log('handleScrub', res.currentTime);
     }
 
     restart(e: any) {
         e.stopPropagation();
-    }
-
-    handleMouseDown(e: any) {
-    }
-
-    handleMouseUp(e: any) {
-
-    }
-
-    handleScrub(e: any) {
-    }
-
-    handleProgressClick(e: any) {
     }
 
     handleKeyUp(e: any) {
@@ -227,7 +250,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     handleVideoMouseLeave(e: any) {
         this.focusablePlayer.blur();
         if (this.state.progressDragging) {
-            this.handleMouseUp(e);
+            this.handleMouseUp();
         }
     }
 
@@ -239,18 +262,16 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         const videoWrapperClasses = [
             'pd-player',
             //ready ? 'pd-player__ready' : 'pd-player__notready',
-            playing ? 'pd-player__paused' : null,
+            !playing ? 'pd-player__paused' : null,
             fullscreen ? 'pd-player__fullscreen' : null,
             playlist && playlist.length === 1 ? null : 'pd-player__pip'
         ].filter((cls) => cls !== null).join(' ');
-
-        console.log('Player', this);
 
         return (
             <div
                 ref={(node: any) => this.focusablePlayer = node}
                 className={videoWrapperClasses}
-                onClick={this.togglePlay}
+                onClick={() => this.togglePlay()}
                 onKeyUp={this.handleKeyUp}
                 onMouseOver={this.handleKeyUp}
                 onMouseLeave={this.handleVideoMouseLeave}
@@ -273,14 +294,52 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                 }
 
                 <VideoControls
+                    ready={true}
                     currentTime={this.state.currentTime}
                     buffer={this.state.bufferPercent}
                     playing={this.state.playing || false}
                     duration={duration}
                     progress={this.state.videoProgress}
+                    handleMouseDown={this.handleMouseDown}
+                    handleMouseUp={this.handleMouseUp}
+                    handleProgressClick={this.handleProgressClick}
+                    handleScrub={this.handleScrub}
                 />
             </div>
         );
+    }
+
+    updateVideoTime(res: {currentTime: number}) {
+        // programaticly update currentTime of video(s)
+        Object
+        .keys(this.state.video)
+        .forEach((name: string) => {
+            if (this.state.video !== undefined) {
+                // TODO: provést kontrolu pozice vs. délky videa
+                this.state.video[name].videoNode.currentTime = res.currentTime;
+            }
+        });
+    }
+
+    togglePlay(type?: 'play' | 'pause') {
+        // toggle play/pause of video(s)
+        Object
+        .keys(this.state.video)
+        .forEach((name: string) => {
+            if (this.state.video !== undefined) {
+                if (type === 'play') {
+                    this.state.video[name].videoNode.play();
+                } else if (type === 'pause') {
+                    this.state.video[name].videoNode.pause();
+                } else {
+                    if (this.state.video[name].videoNode.paused) {
+                        this.state.video[name].videoNode.play();
+                    } else {
+                        this.state.video[name].videoNode.pause();
+                    }
+                }
+            }
+        });
     }
 
     // fullscreen for video element

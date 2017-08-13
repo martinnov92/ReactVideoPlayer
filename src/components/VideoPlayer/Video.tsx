@@ -20,7 +20,7 @@ interface VideoProps {
     timeLabel?: boolean;
     handleCanPlay?: (res: CanPlayInterface) => void;
     handleDurationChange?: (res: { name: string, duration: number}) => void;
-    handleTimeUpdate?: (res: { name: string, currentTime: number, percent: number }) => void;
+    handleTimeUpdate?: (res: { name: string, currentTime: number }) => void;
     handlePlaying?: (res: { name: string, playing: boolean }) => void;
     handleProgress?: (res: { name: string, percent: number }) => void;
 }
@@ -76,13 +76,12 @@ export class Video extends React.PureComponent<VideoProps, any> {
         // update time every second
         const { name } = this.props;
         const currentTime = this.video.currentTime;
-        const percent = (currentTime / this.video.duration) * 100;
 
         if (this.props.handleTimeUpdate) {
-            this.props.handleTimeUpdate({ name, currentTime, percent });
+            this.props.handleTimeUpdate({ name, currentTime });
         }
 
-        return { name, currentTime, percent };
+        return { name, currentTime };
     }
 
     handlePlaying() {

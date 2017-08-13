@@ -3,6 +3,7 @@ import { findDOMNode } from 'react-dom';
 import { getDurationTime } from '../../utils/VideoUtils';
 
 interface VideoControlsProps {
+    ready: boolean;
     playing: boolean;
     duration: number;
     currentTime?: number;
@@ -14,9 +15,9 @@ interface VideoControlsProps {
     toggleFullscreen?: () => void;
     handleRestart?: () => void;
     handleMouseDown?: () => void;
-    handleMouseUp?: () => void;
-    handleScrub?: () => void;
-    handleProgressClick?: () => void;
+    handleMouseUp?: (res: { currentTime: number }) => void;
+    handleScrub?: (res: { currentTime: number }) => void;
+    handleProgressClick?: (res: { currentTime: number }) => void;
 }
 
 interface VideoControlsState {
@@ -45,39 +46,94 @@ export class VideoControls extends React.PureComponent<VideoControlsProps, Video
     }
 
     handleMouseDown(e: any) {
-    }
+        e.preventDefault();
+        e.stopPropagation();
 
-    handleMouseUp(e: any) {
+        if (!this.props.ready) {
+            return;
+        }
+
+        this.setState(() => {
+            document.addEventListener('mousemove', this.handleScrub);
+            document.addEventListener('mouseup', this.handleMouseUp);
+
+            if (this.props.handleMouseDown) {
+                this.props.handleMouseDown();
+            }
+
+            return {
+                isDragging: true
+            };
+        });
     }
 
     handleScrub(e: any) {
-        /*if (!this.state.progressDragging || this.state.ready === false) {
-            return;
-        }*/
+        e.preventDefault();
+        e.stopPropagation();
 
+        if (!this.props.ready || !this.state.isDragging) {
+            return;
+        }
+
+        const { duration } = this.props;
         const progressBar = findDOMNode(this.progress);
         const mousePosition = e.clientX - progressBar.getBoundingClientRect().left;
-        const duration = this.props.duration;
         const currentTime = (mousePosition / this.progress.offsetWidth) * duration;
 
-        const videoProgress = (currentTime / duration) * 100;
+        if (this.props.handleScrub) {
+            this.props.handleScrub({ currentTime });
+        }
 
-        return videoProgress;
+        return { currentTime };
+    }
+
+    handleMouseUp(e: any) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const { duration } = this.props;
+        const progressBar = findDOMNode(this.progress);
+        const mousePosition = e.clientX - progressBar.getBoundingClientRect().left;
+        const currentTime = (mousePosition / this.progress.offsetWidth) * duration;
+
+        if (this.props.handleProgressClick) {
+            this.props.handleProgressClick({ currentTime });
+        } else if (this.props.handleMouseUp) {
+            this.props.handleMouseUp({ currentTime });
+        }
+
+        this.setState(() => {
+            document.removeEventListener('mousemove', this.handleScrub);
+            document.removeEventListener('mouseup', this.handleMouseUp);
+
+            if (this.props.handleMouseUp) {
+                this.props.handleMouseUp({ currentTime });
+            }
+
+            return {
+                isDragging: false
+            };
+        });
     }
 
     handleProgressClick(e: any) {
+        e.preventDefault();
         e.stopPropagation();
 
-        /*if (this.state.ready === false) {
+        if (!this.props.ready) {
             return;
-        }*/
+        }
 
+        const { duration } = this.props;
         const progressBar = findDOMNode(this.progress);
         const mousePosition = e.clientX - progressBar.getBoundingClientRect().left;
-        const duration = this.props.duration;
-        const scrubTime = (mousePosition / this.progress.offsetWidth) * duration;
+        const currentTime = (mousePosition / this.progress.offsetWidth) * duration;
 
-        return scrubTime;
+        if (this.props.handleProgressClick) {
+            this.props.handleProgressClick({ currentTime });
+        }
+
+        return { currentTime };
     }
 
     render() {
@@ -109,7 +165,6 @@ export class VideoControls extends React.PureComponent<VideoControlsProps, Video
                     className="progress"
                     ref={(node: any) => this.progress = node}
                     onMouseDown={this.handleMouseDown}
-                    onMouseUp={this.handleMouseUp}
                     onClick={this.handleProgressClick}
                 >
                     <div
@@ -124,11 +179,11 @@ export class VideoControls extends React.PureComponent<VideoControlsProps, Video
 
                 <div className="pd-player__controls-holder">
                     <button 
-                        className={`pd-player__button button-${playing ? 'play' : 'pause'} toggle}`}
+                        className={`pd-player__button button-${playing ? 'pause' : 'play'} toggle}`}
                         title="Play / pauza"
                         onClick={handlePlay}
                     >
-                        {playing ? '▶' : '||'}
+                        {playing ? '||' : '▶'}
                     </button>
 
                     <button
