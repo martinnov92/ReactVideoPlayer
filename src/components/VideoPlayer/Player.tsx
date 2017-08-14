@@ -29,7 +29,9 @@ interface PlayerState {
     currentTime?: number;
     videoProgress?: number;
     video?: {video: VideoNode} | {};
-    leadVideo?: string; // TODO: uložit nejdelší video, podle kterého budu porovnávat, jestli uložit změnu času/bufferu, atd...
+    primaryVideo?: string; // TODO: uložit nejdelší video, podle kterého budu porovnávat, jestli uložit změnu času/bufferu, atd...
+    ready?: boolean;
+    videosCount?: number;
 
     bufferPercent?: number;
     progressDragging?: boolean;
@@ -53,11 +55,14 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         super();
 
         this.state = {
+            ready: false,
             playing: false,
+            primaryVideo: '',
             currentTime: 0,
             videoProgress: 0,
             bufferPercent: 0,
-            video: {}
+            videosCount: 0,
+            video: {},
         };
 
         this.handleCanPlay = this.handleCanPlay.bind(this);
@@ -71,6 +76,8 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         this.handleScrub = this.handleScrub.bind(this);
         this.handleProgressClick = this.handleProgressClick.bind(this);
         this.updateVideoTime = this.updateVideoTime.bind(this);
+        this.findPrimaryVideo = this.findPrimaryVideo.bind(this);
+        this.isVideoReady = this.isVideoReady.bind(this);
 
         // ?????
         this.handleKeyUp = this.handleKeyUp.bind(this);
@@ -79,6 +86,14 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         this.restart = this.restart.bind(this);
         this.toggleFullscreen = this.toggleFullscreen.bind(this);
         this.resetState = this.resetState.bind(this);
+    }
+
+    componentDidMount() {
+        const videosCount = this.props.playlist.length;
+
+        this.setState({
+            videosCount
+        });
     }
 
     componentWillUnmount() {
@@ -109,17 +124,15 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         }
     }*/
 
-    resetState() {
-        this.setState({
-            playing: false,
-            currentTime: 0,
-            videoProgress: 0,
-            bufferPercent: 0,
-            video: {}
-        });
-    }
-
     handleDurationChange(res: { name: string, duration: number }) {
+        const videosInState = Object.keys(this.state.video).length;
+        const videosCountMatch =
+            (this.state.videosCount === videosInState) && this.state.primaryVideo !== res.name;
+
+        if (videosCountMatch) {
+            return;
+        }
+
         this.setState({
             video: {
                 ...this.state.video as any,
@@ -127,8 +140,12 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                     duration: res.duration
                 }
             }
+        }, () => {
+            if (!videosCountMatch) {
+                this.findPrimaryVideo();
+            }
         });
-        console.log('handleDurationChange', res.duration);
+        console.log('handleDurationChange', res.duration, res.name);
     }
 
     handleCanPlay(res: { name: string, isReady: boolean, readyState: number, videoNode: HTMLVideoElement }) {
@@ -144,21 +161,29 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                     videoNode: res.videoNode
                 }
             }
-        });
+        }, () => this.isVideoReady());
         console.log('handleCanPlay. Video is ready', res);
     }
 
     handleTimeUpdate(res: { name: string, currentTime: number }) {
-        // TODO: kontrolovat a ukládat stav delšího videa
-        // TODO: nahradit this.state.video['bunny'] this.state.video[this.state.leadVideo].duration
-        const duration = this.state.video && this.state.video['bunny'].duration;
-        const percent = (res.currentTime / duration) * 100;
+        const { primaryVideo, video } = this.state;
+        let duration = 0;
+        let percent = 0;
+
+        if (primaryVideo !== res.name) {
+            return;
+        }
+
+        if (primaryVideo) {
+            duration = video && video[primaryVideo].duration;
+            percent = (res.currentTime / duration) * 100;
+        }
 
         this.setState({
             currentTime: res.currentTime,
             videoProgress: percent
         });
-        console.log('handleTimeUpdate', res.currentTime, percent);
+        console.log('handleTimeUpdate', res.currentTime, percent, res.name);
     }
 
     handlePlaying(res: { name: string, playing: boolean }) {
@@ -169,12 +194,16 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     }
 
     handleProgress(res: { name: string, percent: number}) {
-        // TODO: zkontrolovat a ukládat pouze stav z délšího videa
-        // if (this.state.leadVideo !== res.name) { return; }
+        const { primaryVideo } = this.state;
+
+        if (primaryVideo !== res.name) {
+            return;
+        }
+
         this.setState({
             bufferPercent: res.percent
         });
-        console.log('handleProgress', res.percent);
+        console.log('handleProgress', res.percent, res.name);
     }
 
     handleProgressClick(res: { currentTime: number }) {
@@ -205,8 +234,13 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     }
 
     handleScrub(res: { currentTime: number }) {
-        // TODO: nahradit this.state.video['bunny'] this.state.video[this.state.leadVideo].duration
-        const duration = this.state.video && this.state.video['bunny'].duration;
+        const { primaryVideo } = this.state;
+        let duration = 0;
+
+        if (primaryVideo && this.state.video) {
+            duration = this.state.video[primaryVideo].duration;
+        }
+
         const percent = (res.currentTime / duration) * 100;
 
         // handleScrub, does not save currentTime, just pause video and update progress bar
@@ -255,13 +289,20 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     }
 
     render () {
-        const { playing, fullscreen } = this.state;
+        const {
+            ready,
+            playing,
+            fullscreen,
+            primaryVideo
+        } = this.state;
         const { playlist } = this.props;
-        const duration = this.state.video !== undefined ? this.state.video.hasOwnProperty('bunny') ? this.state.video['bunny'].duration : 0 : 0;
+
+        const duration =
+            this.state.video && primaryVideo ? this.state.video[primaryVideo].duration : 0;
 
         const videoWrapperClasses = [
             'pd-player',
-            //ready ? 'pd-player__ready' : 'pd-player__notready',
+            ready ? 'pd-player__ready' : 'pd-player__notready',
             !playing ? 'pd-player__paused' : null,
             fullscreen ? 'pd-player__fullscreen' : null,
             playlist && playlist.length === 1 ? null : 'pd-player__pip'
@@ -294,7 +335,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                 }
 
                 <VideoControls
-                    ready={true}
+                    ready={this.state.ready || false}
                     currentTime={this.state.currentTime}
                     buffer={this.state.bufferPercent}
                     playing={this.state.playing || false}
@@ -310,6 +351,10 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     }
 
     updateVideoTime(res: {currentTime: number}) {
+        if (!this.state.ready) {
+            return;
+        }
+
         // programaticly update currentTime of video(s)
         Object
         .keys(this.state.video)
@@ -322,6 +367,10 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     }
 
     togglePlay(type?: 'play' | 'pause') {
+        if (!this.state.ready) {
+            return;
+        }
+
         // toggle play/pause of video(s)
         Object
         .keys(this.state.video)
@@ -342,11 +391,77 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         });
     }
 
+    resetState() {
+        this.setState({
+            playing: false,
+            primaryVideo: '',
+            currentTime: 0,
+            videoProgress: 0,
+            bufferPercent: 0,
+            videosCount: 0,
+            video: {}
+        });
+    }
+
+    isVideoReady() {
+        let ready = false;
+        const indexes = Object.keys(this.state.video);
+
+        if (this.props.playlist.length === 1) {
+            if (this.state.video) {
+                if (this.state.video[indexes[0]].ready) {
+                    ready = true;
+                }
+            }
+        } else {
+            const readyVideos = indexes.filter((video) => {
+                if (this.state.video) {
+                    if (this.state.video[video].ready) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+
+            if (readyVideos.length === this.props.playlist.length) {
+                ready = true;
+            }
+        }
+
+        // set state to ready = true when all the videos are in ready state
+        this.setState({
+            ready
+        });
+    }
+
+    findPrimaryVideo() {
+        const indexes = Object.keys(this.state.video);
+        let primaryVideo = '';
+
+        if (this.props.playlist.length === 1) {
+            if (this.state.video) {
+                primaryVideo = indexes[0];
+            }
+        } else {
+            primaryVideo = indexes.sort((one, two) => {
+                if (this.state.video) {
+                    return this.state.video[one].duration - this.state.video[two].duration;
+                }
+                return 0;
+            })[0];
+        }
+
+        // name of the longest video
+        this.setState({
+            primaryVideo
+        });
+    }
+
     // fullscreen for video element
     toggleFullscreen(e: React.SyntheticEvent<any>) {
-        /*if (this.state.ready === false) {
+        if (!this.state.ready) {
             return;
-        }*/
+        }
 
         let fullscreen = false;
 
