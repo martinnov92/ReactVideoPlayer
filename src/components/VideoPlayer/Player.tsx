@@ -29,7 +29,7 @@ interface PlayerState {
     currentTime?: number;
     videoProgress?: number;
     video?: {video: VideoNode} | {};
-    primaryVideo?: string; // TODO: uložit nejdelší video, podle kterého budu porovnávat, jestli uložit změnu času/bufferu, atd...
+    primaryVideo?: string;
     ready?: boolean;
     videosCount?: number;
 
@@ -40,8 +40,11 @@ interface PlayerState {
 }
 
 // TODO:
-// * add more sources for different types of supported files
-// * check the longes video and save to state
+// [ ] add more sources for different types of supported files
+// [ ] stop playing when currentTime is bigger then duration
+// [ ] display currentTime / duration when 2 videos in tooltip, when hover over remaining time in progress bar
+// [ ] add props for handleScrub,...
+// [ ] 
 
 export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     static defaultProps = {
@@ -293,7 +296,8 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             ready,
             playing,
             fullscreen,
-            primaryVideo
+            primaryVideo,
+            videosCount
         } = this.state;
         const { playlist } = this.props;
 
@@ -325,6 +329,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                             key={video.key}
                             name={video.key}
                             video={video}
+                            timeLabel={videosCount && videosCount > 1 ? true : false}
                             handleCanPlay={this.handleCanPlay}
                             handleDurationChange={this.handleDurationChange}
                             handleTimeUpdate={this.handleTimeUpdate}
@@ -445,7 +450,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         } else {
             primaryVideo = indexes.sort((one, two) => {
                 if (this.state.video) {
-                    return this.state.video[one].duration - this.state.video[two].duration;
+                    return this.state.video[two].duration - this.state.video[one].duration;
                 }
                 return 0;
             })[0];

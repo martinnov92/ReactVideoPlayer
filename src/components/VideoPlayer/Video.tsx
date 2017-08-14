@@ -126,11 +126,7 @@ export class Video extends React.PureComponent<VideoProps, any> {
     }
 
     render() {
-        const { video, timeLabel } = this.props;
-        const duration = this.video ? this.video.duration : 0;
-        const currentTime = this.video ? this.video.currentTime : 0;
-        const remainingTime = getDurationTime(duration - currentTime);
-
+        const { video } = this.props;
         console.log('Video', this.video);
 
         return (
@@ -152,17 +148,6 @@ export class Video extends React.PureComponent<VideoProps, any> {
                         </strong>
                     </p>
                 </video>
-                {
-                    !timeLabel
-                    ? null
-                    : <span className="pd-player__video-time">
-                        {
-                            this.video
-                            ? remainingTime + ' / ' + getDurationTime(this.video.duration)
-                            : '00:00'
-                        }
-                    </span>
-                }
             </div>
         );  
     }
