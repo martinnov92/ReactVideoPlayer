@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { getDurationTime } from '../../utils/VideoUtils';
 
 interface VideoType {
     key: string;
