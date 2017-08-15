@@ -35,9 +35,7 @@ interface PlayerState {
     videosCount?: number;
 
     bufferPercent?: number;
-    progressDragging?: boolean;
     fullscreen?: boolean;
-    longestVideoNode?: HTMLVideoElement | null;
 }
 
 // TODO:
@@ -45,7 +43,7 @@ interface PlayerState {
 // [x] stop playing when currentTime is bigger then duration
 // [ ] display currentTime / duration when 2 videos in tooltip, when hover over remaining time in progress bar
 // [x] add props for handleScrub,...
-// [ ] restart fn, skip fn, handleKeyDown fn
+// [x] restart fn, skip fn, handleKeyDown fn
 
 export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     static defaultProps = {
@@ -82,12 +80,10 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         this.updateVideoTime = this.updateVideoTime.bind(this);
         this.findPrimaryVideo = this.findPrimaryVideo.bind(this);
         this.isVideoReady = this.isVideoReady.bind(this);
-
-        // ?????
         this.handleKeyUp = this.handleKeyUp.bind(this);
         this.handleVideoMouseLeave = this.handleVideoMouseLeave.bind(this);
-        this.handleProgress = this.handleProgress.bind(this);
         this.restart = this.restart.bind(this);
+        this.handleProgress = this.handleProgress.bind(this);
         this.toggleFullscreen = this.toggleFullscreen.bind(this);
         this.resetState = this.resetState.bind(this);
     }
@@ -276,40 +272,9 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         console.log('handleScrub', res.currentTime);
     }
 
-    restart(e: any) {
+    restart(e?: any) {
         e.stopPropagation();
-    }
-
-    handleKeyUp(e: any) {
-        e.preventDefault();
-
-        /*if (this.state.ready === false) {
-            return;
-        }*/
-
-        this.focusablePlayer.focus();
-        let skip = this.state.currentTime || 0;
-
-        switch (e.keyCode) {
-            case 39:
-                skip += 10;
-                break;
-            case 37:
-                skip -= 25;
-                break;
-            case 32:
-                // this.togglePlay(e);
-                break;
-            default:
-                return;
-        }
-    }
-
-    handleVideoMouseLeave(e: any) {
-        this.focusablePlayer.blur();
-        if (this.state.progressDragging) {
-            this.handleMouseUp();
-        }
+        this.updateVideoTime({ currentTime: 0 }, true);
     }
 
     render () {
@@ -367,6 +332,9 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                     playing={this.state.playing || false}
                     duration={duration}
                     progress={this.state.videoProgress}
+                    handlePlay={this.togglePlay}
+                    handleRestart={this.restart}
+                    toggleFullscreen={this.toggleFullscreen}
                     handleMouseDown={this.handleMouseDown}
                     handleMouseUp={this.handleMouseUp}
                     handleProgressClick={this.handleProgressClick}
@@ -374,6 +342,54 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                 />
             </div>
         );
+    }
+
+    resetState() {
+        this.setState({
+            playing: false,
+            primaryVideo: '',
+            currentTime: 0,
+            videoProgress: 0,
+            bufferPercent: 0,
+            videosCount: 0,
+            video: {}
+        });
+    }
+
+    handleKeyUp(e: any) {
+        if (this.state.ready === false) {
+            return;
+        }
+
+        e.preventDefault();
+
+        this.focusablePlayer.focus();
+        let skip = this.state.currentTime || 0;
+        let updateTime = false;
+
+        switch (e.keyCode) {
+            case 39:
+                skip += 15;
+                updateTime = true;
+                break;
+            case 37:
+                skip -= 15;
+                updateTime = true;
+                break;
+            case 32:
+                this.togglePlay();
+                break;
+            default:
+                break;
+        }
+
+        if (updateTime) {
+            this.updateVideoTime({ currentTime: skip }, updateTime);
+        }
+    }
+
+    handleVideoMouseLeave(e: any) {
+        this.focusablePlayer.blur();
     }
 
     updateVideoTime(res: {currentTime: number}, play?: boolean) {
@@ -439,18 +455,6 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         });
     }
 
-    resetState() {
-        this.setState({
-            playing: false,
-            primaryVideo: '',
-            currentTime: 0,
-            videoProgress: 0,
-            bufferPercent: 0,
-            videosCount: 0,
-            video: {}
-        });
-    }
-
     isVideoReady() {
         let ready = false;
         const indexes = Object.keys(this.state.video);
@@ -506,7 +510,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     }
 
     // fullscreen for video element
-    toggleFullscreen(e: React.SyntheticEvent<any>) {
+    toggleFullscreen(e?: React.SyntheticEvent<any>) {
         if (!this.state.ready) {
             return;
         }
