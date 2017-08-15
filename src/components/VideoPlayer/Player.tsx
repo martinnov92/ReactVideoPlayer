@@ -11,8 +11,9 @@ interface VideoType {
 }
 
 interface PlayerProps {
-    onPlayingCallback?: Function;
     playlist: VideoType[];
+    onTogglePlayback?: (paused: boolean) => void;
+    onPlayingCallback?: (res: { sec: number }) => void;
     resetCurrentTime?: boolean;
 }
 
@@ -43,7 +44,7 @@ interface PlayerState {
 // [ ] add more sources for different types of supported files
 // [x] stop playing when currentTime is bigger then duration
 // [ ] display currentTime / duration when 2 videos in tooltip, when hover over remaining time in progress bar
-// [ ] add props for handleScrub,...
+// [x] add props for handleScrub,...
 // [ ] restart fn, skip fn, handleKeyDown fn
 
 export class Player extends React.PureComponent<PlayerProps, PlayerState> {
@@ -186,6 +187,11 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             currentTime: res.currentTime,
             videoProgress: percent
         });
+
+        if (this.props.onPlayingCallback) {
+            this.props.onPlayingCallback({ sec: res.currentTime });
+        }
+
         console.log('handleTimeUpdate', res.currentTime, percent, res.name);
     }
 
@@ -198,10 +204,13 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             return;
         }
 
+        if (this.props.onTogglePlayback) {
+            this.props.onTogglePlayback(res.playing);
+        }
+
         this.setState({
             playing: res.playing
         });
-        console.log('handlePlaying', res.playing);
     }
 
     handleProgress(res: { name: string, percent: number}) {
@@ -253,6 +262,10 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         }
 
         const percent = (res.currentTime / duration) * 100;
+
+        if (this.props.onPlayingCallback) {
+            this.props.onPlayingCallback({ sec: res.currentTime });
+        }
 
         // handleScrub, does not save currentTime, just pause video and update progress bar
         // currentTime will be updated on mouseUp
