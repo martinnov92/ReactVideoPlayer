@@ -17,6 +17,7 @@ interface VideoProps {
     name: string;
     video: VideoType;
     timeLabel?: boolean;
+    handleClick?: () => void;
     handleCanPlay?: (res: CanPlayInterface) => void;
     handleDurationChange?: (res: { name: string, duration: number}) => void;
     handleTimeUpdate?: (res: { name: string, currentTime: number }) => void;
@@ -129,7 +130,10 @@ export class Video extends React.PureComponent<VideoProps, any> {
         console.log('Video', this.video);
 
         return (
-            <div className="pd-player__video viewer">
+            <div
+                onClick={this.props.handleClick}
+                className="pd-player__video viewer"
+            >
                 <video
                     ref={(node: HTMLVideoElement) => this.video = node}
                     onCanPlay={this.handleCanPlay}

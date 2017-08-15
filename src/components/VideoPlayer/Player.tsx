@@ -41,10 +41,10 @@ interface PlayerState {
 
 // TODO:
 // [ ] add more sources for different types of supported files
-// [ ] stop playing when currentTime is bigger then duration
+// [x] stop playing when currentTime is bigger then duration
 // [ ] display currentTime / duration when 2 videos in tooltip, when hover over remaining time in progress bar
 // [ ] add props for handleScrub,...
-// [ ] 
+// [ ] restart fn, skip fn, handleKeyDown fn
 
 export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     static defaultProps = {
@@ -190,6 +190,14 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     }
 
     handlePlaying(res: { name: string, playing: boolean }) {
+        const videosInState = Object.keys(this.state.video).length;
+        const videosCountMatch =
+            (this.state.videosCount === videosInState) && this.state.primaryVideo !== res.name;
+
+        if (videosCountMatch) {
+            return;
+        }
+
         this.setState({
             playing: res.playing
         });
@@ -206,7 +214,6 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         this.setState({
             bufferPercent: res.percent
         });
-        console.log('handleProgress', res.percent, res.name);
     }
 
     handleProgressClick(res: { currentTime: number }) {
@@ -217,7 +224,6 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                 currentTime: res.currentTime
             };
         });
-        console.log('handleProgressClick', res.currentTime);
     }
 
     handleMouseDown() {
@@ -233,7 +239,9 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             playing: true
         });
 
-        this.togglePlay('play');
+        if (res) {
+            this.updateVideoTime({ currentTime: res.currentTime }, true);
+        }
     }
 
     handleScrub(res: { currentTime: number }) {
@@ -316,7 +324,6 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             <div
                 ref={(node: any) => this.focusablePlayer = node}
                 className={videoWrapperClasses}
-                onClick={() => this.togglePlay()}
                 onKeyUp={this.handleKeyUp}
                 onMouseOver={this.handleKeyUp}
                 onMouseLeave={this.handleVideoMouseLeave}
@@ -330,6 +337,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                             name={video.key}
                             video={video}
                             timeLabel={videosCount && videosCount > 1 ? true : false}
+                            handleClick={this.togglePlay}
                             handleCanPlay={this.handleCanPlay}
                             handleDurationChange={this.handleDurationChange}
                             handleTimeUpdate={this.handleTimeUpdate}
@@ -355,7 +363,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         );
     }
 
-    updateVideoTime(res: {currentTime: number}) {
+    updateVideoTime(res: {currentTime: number}, play?: boolean) {
         if (!this.state.ready) {
             return;
         }
@@ -366,7 +374,17 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         .forEach((name: string) => {
             if (this.state.video !== undefined) {
                 // TODO: provést kontrolu pozice vs. délky videa
-                this.state.video[name].videoNode.currentTime = res.currentTime;
+                const { videoNode } = this.state.video[name];
+
+                if (res.currentTime >= videoNode.duration) {
+                    videoNode.currentTime = videoNode.duration;
+                    videoNode.pause();
+                } else {
+                    videoNode.currentTime = res.currentTime;
+                    if (play) {
+                        videoNode.play();
+                    }
+                }
             }
         });
     }
@@ -381,15 +399,27 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         .keys(this.state.video)
         .forEach((name: string) => {
             if (this.state.video !== undefined) {
-                if (type === 'play') {
-                    this.state.video[name].videoNode.play();
-                } else if (type === 'pause') {
-                    this.state.video[name].videoNode.pause();
+                const { videoNode } = this.state.video[name];
+                const isPlaying = !videoNode.paused && !videoNode.ended && videoNode.readyState > 0;
+
+                if (videoNode.currentTime >= videoNode.duration) {
+                    videoNode.currentTime = videoNode.duration;
+                    videoNode.pause();
                 } else {
-                    if (this.state.video[name].videoNode.paused) {
-                        this.state.video[name].videoNode.play();
+                    if (type === 'play') {
+                        if (!isPlaying) {
+                            videoNode.play();
+                        }
+                    } else if (type === 'pause') {
+                        videoNode.pause();
                     } else {
-                        this.state.video[name].videoNode.pause();
+                        if (videoNode.paused) {
+                            videoNode.play();
+                        } else {
+                            if (isPlaying) {
+                                videoNode.pause();
+                            }
+                        }
                     }
                 }
             }
