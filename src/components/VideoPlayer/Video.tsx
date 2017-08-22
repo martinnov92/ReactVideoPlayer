@@ -44,6 +44,10 @@ export class Video extends React.PureComponent<VideoProps, any> {
         this.handleProgress = this.handleProgress.bind(this);
     }
 
+    shouldComponentUpdate(nextProps: VideoProps) {
+        return false;
+    }
+
     handleCanPlay() {
         // is video ready?
         const readyState = this.video.readyState;

@@ -145,7 +145,6 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                 this.findPrimaryVideo();
             }
         });
-        console.log('handleDurationChange', res.duration, res.name);
     }
 
     handleCanPlay(res: { name: string, isReady: boolean, readyState: number, videoNode: HTMLVideoElement }) {
@@ -162,7 +161,6 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                 }
             }
         }, () => this.isVideoReady());
-        console.log('handleCanPlay. Video is ready', res);
     }
 
     handleTimeUpdate(res: { name: string, currentTime: number }) {
@@ -188,7 +186,6 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             this.props.onPlayingCallback({ sec: res.currentTime });
         }
 
-        console.log('handleTimeUpdate', res.currentTime, percent, res.name);
     }
 
     handlePlaying(res: { name: string, playing: boolean }) {
@@ -269,7 +266,6 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             videoProgress: percent,
             currentTime: res.currentTime
         });
-        console.log('handleScrub', res.currentTime);
     }
 
     restart(e?: any) {
