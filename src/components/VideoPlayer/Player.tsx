@@ -86,14 +86,17 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         this.handleProgress = this.handleProgress.bind(this);
         this.toggleFullscreen = this.toggleFullscreen.bind(this);
         this.resetState = this.resetState.bind(this);
+        this.getCountOfVideos = this.getCountOfVideos.bind(this);
     }
 
     componentDidMount() {
-        const videosCount = this.props.playlist.length;
+        this.getCountOfVideos();
+    }
 
-        this.setState({
-            videosCount
-        });
+    componentWillReceiveProps(nextProps: PlayerProps) {
+        if (nextProps.playlist.length !== this.props.playlist.length) {
+            this.getCountOfVideos(nextProps.playlist.length);
+        }
     }
 
     componentWillUnmount() {
@@ -124,6 +127,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         }
     }*/
 
+    // https://www.w3schools.com/tags/av_event_canplay.asp
     handleDurationChange(res: { name: string, duration: number }) {
         const videosInState = Object.keys(this.state.video).length;
         const videosCountMatch =
@@ -482,10 +486,18 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         });
     }
 
+    getCountOfVideos(count?: number) {
+        const videosCount = count || this.props.playlist.length;
+
+        this.setState({
+            videosCount
+        });
+    }
+
     findPrimaryVideo() {
         const indexes = Object.keys(this.state.video);
         let primaryVideo = '';
-
+        console.log(this.state.video);
         if (this.props.playlist.length === 1) {
             if (this.state.video) {
                 primaryVideo = indexes[0];

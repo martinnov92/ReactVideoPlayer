@@ -45,7 +45,23 @@ export class Video extends React.PureComponent<VideoProps, any> {
     }
 
     shouldComponentUpdate(nextProps: VideoProps) {
+        if (nextProps.video !== this.props.video) {
+            return true;
+        }
+
         return false;
+    }
+
+    handleDurationChange() {
+        // update video duration
+        const videoDuration = this.video.duration;
+        const { name } = this.props;
+
+        if (this.props.handleDurationChange) {
+            this.props.handleDurationChange({ name, duration: videoDuration });
+        }
+        console.log(videoDuration, this.video);
+        return { name, duration: videoDuration };
     }
 
     handleCanPlay() {
@@ -62,18 +78,6 @@ export class Video extends React.PureComponent<VideoProps, any> {
         }
 
         return { name, isReady: false, readyState: 0 };
-    }
-
-    handleDurationChange() {
-        // update video duration
-        const videoDuration = this.video.duration;
-        const { name } = this.props;
-
-        if (this.props.handleDurationChange) {
-            this.props.handleDurationChange({ name, duration: videoDuration });
-        }
-
-        return { name, duration: videoDuration };
     }
 
     handleTimeUpdate() {
