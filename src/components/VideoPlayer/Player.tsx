@@ -39,9 +39,12 @@ interface PlayerState {
 }
 
 // TODO:
-// [ ] add more sources for different types of supported files
-// [x] stop playing when currentTime is bigger then duration
+// [ ] when new video is added, start from currentTime + play video
 // [ ] display currentTime / duration when 2 videos in tooltip, when hover over remaining time in progress bar
+// [ ] add more sources for different types of supported files
+
+// DONE:
+// [x] stop playing when currentTime is bigger then duration
 // [x] add props for handleScrub,...
 // [x] restart fn, skip fn, handleKeyDown fn
 
@@ -164,7 +167,9 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                     videoNode: res.videoNode
                 }
             }
-        }, () => this.isVideoReady());
+        }, () => {
+            this.isVideoReady();
+        });
     }
 
     handleTimeUpdate(res: { name: string, currentTime: number }) {
@@ -497,7 +502,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     findPrimaryVideo() {
         const indexes = Object.keys(this.state.video);
         let primaryVideo = '';
-        console.log(this.state.video);
+
         if (this.props.playlist.length === 1) {
             if (this.state.video) {
                 primaryVideo = indexes[0];
