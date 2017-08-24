@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { findDOMNode } from 'react-dom';
-import { getDurationTime } from '../../utils/VideoUtils';
+import { getDurationTime } from './utils/VideoUtils';
 
 interface VideoControlsProps {
     ready: boolean;

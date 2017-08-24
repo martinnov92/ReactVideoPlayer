@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { Video, VideoControls } from './';
-import { startFullscreen, exitFullscreen } from '../../utils/VideoUtils';
+import { startFullscreen, exitFullscreen } from './utils/VideoUtils';
 import './Player.css';
 
 interface VideoType {
