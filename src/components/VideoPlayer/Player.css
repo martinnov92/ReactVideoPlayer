@@ -41,15 +41,12 @@
   margin-top: -5px;
   border-radius: 50%;
 }
-.pd-player.pd-player__pip .pd-player__video {
-  width: 50%;
+.pd-player .pd-player__video:first-child:nth-last-child(1) {
+  width: 100%;
 }
-.pd-player.pd-player__pip[data-videos="3"] .pd-player__video {
-  width: 33%;
-}
-.pd-player.pd-player__pip[data-videos="4"] .pd-player__video {
+.pd-player .pd-player__video:first-child:nth-last-child(3),
+.pd-player .pd-player__video + .pd-player__video {
   width: 50%;
-  height: 50%;
 }
 .pd-player:hover .pd-player__controls {
   padding: 0 10px;

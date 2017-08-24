@@ -135,7 +135,12 @@ export class Video extends React.PureComponent<VideoProps, any> {
 
     render() {
         const { video } = this.props;
-        console.log('Video', this.video);
+
+        if (this.video) {
+            if (this.video.ended && this.video.currentTime === this.video.duration) {
+                // return null;
+            }
+        }
 
         return (
             <div

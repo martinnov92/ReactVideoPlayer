@@ -194,7 +194,6 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         if (this.props.onPlayingCallback) {
             this.props.onPlayingCallback({ sec: res.currentTime });
         }
-
     }
 
     handlePlaying(res: { name: string, playing: boolean }) {
@@ -311,7 +310,6 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                 onMouseOver={this.handleKeyUp}
                 onMouseLeave={this.handleVideoMouseLeave}
                 tabIndex={-1}
-                data-videos={playlist && playlist.length}
             >
                 {
                     playlist.map((video) => {
@@ -334,7 +332,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                     ready={this.state.ready || false}
                     currentTime={this.state.currentTime}
                     buffer={this.state.bufferPercent}
-                    playing={this.state.playing || false}
+                    playing={this.state.playing || false}
                     duration={duration}
                     progress={this.state.videoProgress}
                     handlePlay={this.togglePlay}
