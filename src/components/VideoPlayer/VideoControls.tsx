@@ -175,6 +175,7 @@ export class VideoControls extends React.PureComponent<VideoControlsProps, Video
                         className="progress__filled"
                         style={progressStyle}
                     />
+                    <div className="progress__drag" />
                 </div>
 
                 <div className="pd-player__controls-holder">
