@@ -73,27 +73,28 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
 
         this.play = this.play.bind(this);
         this.pause = this.pause.bind(this);
+        this.restart = this.restart.bind(this);
+        this.togglePlay = this.togglePlay.bind(this);
         this.skipToTime = this.skipToTime.bind(this);
 
-        this.handleCanPlay = this.handleCanPlay.bind(this);
-        this.handleDurationChange = this.handleDurationChange.bind(this);
-        this.handleTimeUpdate = this.handleTimeUpdate.bind(this);
-        this.handlePlaying = this.handlePlaying.bind(this);
-        this.togglePlay = this.togglePlay.bind(this);
-
-        this.handleMouseDown = this.handleMouseDown.bind(this);
-        this.handleMouseUp = this.handleMouseUp.bind(this);
-        this.handleScrub = this.handleScrub.bind(this);
-        this.handleProgressClick = this.handleProgressClick.bind(this);
-        this.findPrimaryVideo = this.findPrimaryVideo.bind(this);
         this.isVideoReady = this.isVideoReady.bind(this);
-        this.handleKeyUp = this.handleKeyUp.bind(this);
-        this.handleVideoMouseLeave = this.handleVideoMouseLeave.bind(this);
-        this.restart = this.restart.bind(this);
+        this.handlePlaying = this.handlePlaying.bind(this);
+        this.handleCanPlay = this.handleCanPlay.bind(this);
         this.handleProgress = this.handleProgress.bind(this);
-        this.toggleFullscreen = this.toggleFullscreen.bind(this);
+        this.handleTimeUpdate = this.handleTimeUpdate.bind(this);
+        this.handleDurationChange = this.handleDurationChange.bind(this);
+
+        this.handleScrub = this.handleScrub.bind(this);
+        this.handleKeyUp = this.handleKeyUp.bind(this);
+        this.handleMouseUp = this.handleMouseUp.bind(this);
+        this.handleMouseDown = this.handleMouseDown.bind(this);
+        this.handleProgressClick = this.handleProgressClick.bind(this);
+        this.handleVideoMouseLeave = this.handleVideoMouseLeave.bind(this);
+
         this.resetState = this.resetState.bind(this);
         this.getCountOfVideos = this.getCountOfVideos.bind(this);
+        this.findPrimaryVideo = this.findPrimaryVideo.bind(this);
+        this.toggleFullscreen = this.toggleFullscreen.bind(this);
     }
 
     componentDidMount() {
@@ -134,6 +135,9 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         }
     }*/
 
+    /**
+     * VIDEO EVENTS
+     */
     // https://www.w3schools.com/tags/av_event_canplay.asp
     handleDurationChange(res: { name: string, duration: number }) {
         const videosInState = Object.keys(this.state.video).length;
@@ -199,6 +203,18 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         }
     }
 
+    handleProgress(res: { name: string, percent: number}) {
+        const { primaryVideo } = this.state;
+
+        if (primaryVideo !== res.name) {
+            return;
+        }
+
+        this.setState({
+            bufferPercent: res.percent
+        });
+    }
+
     handlePlaying(res: { name: string, playing: boolean }) {
         const videosInState = Object.keys(this.state.video).length;
         const videosCountMatch =
@@ -217,35 +233,15 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         });
     }
 
-    handleProgress(res: { name: string, percent: number}) {
-        const { primaryVideo } = this.state;
-
-        if (primaryVideo !== res.name) {
-            return;
-        }
-
-        this.setState({
-            bufferPercent: res.percent
-        });
-    }
-
+    /**
+     * VIDEO PROGRESS BAR CONTROLS
+     */
     handleProgressClick(res: { currentTime: number }) {
         this.skipToTime(res.currentTime);
     }
 
     handleMouseDown() {
-        this.setState({
-            playing: false
-        });
-
-        this.togglePlay('pause');
-    }
-
-    handleMouseUp(res?: { currentTime: number }) {
-        this.setState({
-            playing: true,
-            
-        });
+        this.pause();
     }
 
     handleScrub(res: { currentTime: number }) {
@@ -268,6 +264,44 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             videoProgress: percent,
             currentTime: res.currentTime
         });
+    }
+
+    handleMouseUp(res: { currentTime: number }) {
+        this.skipToTime(res.currentTime);
+        this.play();
+    }
+
+    handleKeyUp(e: any) {
+        if (!this.state.ready ||
+            [32, 37, 39].indexOf(e.keyCode) === -1) {
+            return;
+        }
+
+        e.preventDefault();
+
+        this.focusablePlayer.focus();
+        let skip = this.state.currentTime || 0;
+        let updateTime = false;
+
+        switch (e.keyCode) {
+            case 39:
+                skip += 15;
+                updateTime = true;
+                break;
+            case 37:
+                skip -= 15;
+                updateTime = true;
+                break;
+            case 32:
+                this.togglePlay();
+                break;
+            default:
+                break;
+        }
+
+        if (updateTime) {
+            this.skipToTime(skip);
+        }
     }
 
     render () {
@@ -386,42 +420,6 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             videosCount: 0,
             video: {}
         });
-    }
-
-    handleKeyUp(e: any) {
-        if (!this.state.ready) {
-            return;
-        }
-
-        e.preventDefault();
-
-        if ([32, 37, 39].indexOf(e.keyCode) === -1) {
-            return;
-        }
-
-        this.focusablePlayer.focus();
-        let skip = this.state.currentTime || 0;
-        let updateTime = false;
-
-        switch (e.keyCode) {
-            case 39:
-                skip += 15;
-                updateTime = true;
-                break;
-            case 37:
-                skip -= 15;
-                updateTime = true;
-                break;
-            case 32:
-                this.togglePlay();
-                break;
-            default:
-                break;
-        }
-
-        if (updateTime) {
-            this.skipToTime(skip);
-        }
     }
 
     handleVideoMouseLeave(e: any) {

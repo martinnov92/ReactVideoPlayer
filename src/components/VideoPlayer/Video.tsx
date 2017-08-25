@@ -57,13 +57,11 @@ export class Video extends React.PureComponent<VideoProps, any> {
             if (skipToTime) {
                 if (skipToTime > this.video.duration) {
                     this.video.currentTime = this.video.duration;
+                } else {
+                    this.video.currentTime = skipToTime || 0;
                 }
-
-                this.video.currentTime = skipToTime || 0;
             }
         }
-
-        console.log(nextProps);
     }
 
     shouldComponentUpdate(nextProps: VideoProps) {
@@ -163,7 +161,7 @@ export class Video extends React.PureComponent<VideoProps, any> {
                 // return null;
             }
         }
-
+        console.log('Video', this);
         return (
             <div
                 onClick={this.props.handleClick}
@@ -177,6 +175,7 @@ export class Video extends React.PureComponent<VideoProps, any> {
                     onPlaying={this.handlePlaying}
                     onPause={this.handlePlaying}
                     onProgress={this.handleProgress}
+                    loop={false}
                 >
                     <source src={video.webm} type="video/webm" />
                     <source src={video.mp4} type="video/mp4" />
