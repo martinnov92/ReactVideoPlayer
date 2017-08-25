@@ -10,13 +10,15 @@ interface CanPlayInterface {
     name: string;
     isReady: boolean;
     readyState: number;
-    videoNode: HTMLVideoElement;
 }
 
 interface VideoProps {
     name: string;
     video: VideoType;
+    play: boolean;
+    skipToTime?: number;
     timeLabel?: boolean;
+
     handleClick?: () => void;
     handleCanPlay?: (res: CanPlayInterface) => void;
     handleDurationChange?: (res: { name: string, duration: number}) => void;
@@ -44,8 +46,28 @@ export class Video extends React.PureComponent<VideoProps, any> {
         this.handleProgress = this.handleProgress.bind(this);
     }
 
+    componentWillReceiveProps(nextProps: VideoProps) {
+        const { play, skipToTime } = nextProps;
+
+        if (this.props.play !== play) {
+            this.video[play ? 'play' : 'pause']();
+        }
+
+        if (this.props.skipToTime !== skipToTime) {
+            if (skipToTime) {
+                if (skipToTime > this.video.duration) {
+                    this.video.currentTime = this.video.duration;
+                }
+
+                this.video.currentTime = skipToTime || 0;
+            }
+        }
+
+        console.log(nextProps);
+    }
+
     shouldComponentUpdate(nextProps: VideoProps) {
-        if (nextProps.video !== this.props.video) {
+        if (this.props.video !== nextProps.video) {
             return true;
         }
 
@@ -60,7 +82,7 @@ export class Video extends React.PureComponent<VideoProps, any> {
         if (this.props.handleDurationChange) {
             this.props.handleDurationChange({ name, duration: videoDuration });
         }
-        console.log(videoDuration, this.video);
+
         return { name, duration: videoDuration };
     }
 
@@ -71,7 +93,7 @@ export class Video extends React.PureComponent<VideoProps, any> {
 
         if (this.video.readyState > 0) {
             if (this.props.handleCanPlay) {
-                this.props.handleCanPlay({ name, isReady: true, readyState: readyState, videoNode: this.video });
+                this.props.handleCanPlay({ name, isReady: true, readyState: readyState });
             }
 
             return { name, isReady: true, readyState, videoNode: this.video };

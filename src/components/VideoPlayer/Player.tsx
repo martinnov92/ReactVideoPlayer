@@ -22,12 +22,12 @@ interface VideoNode {
     ready: boolean;
     duration?: number;
     readyState: number;
-    videoNode: HTMLVideoElement;
 }
 
 interface PlayerState {
     playing?: boolean;
     currentTime?: number;
+    skipToTime?: number;
     videoProgress?: number;
     video?: {video: VideoNode} | {};
     primaryVideo?: string;
@@ -60,15 +60,20 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         super();
 
         this.state = {
-            ready: false,
             playing: false,
-            primaryVideo: '',
+            ready: false,
             currentTime: 0,
+            skipToTime: 0,
+            primaryVideo: '',
             videoProgress: 0,
             bufferPercent: 0,
             videosCount: 0,
             video: {},
         };
+
+        this.play = this.play.bind(this);
+        this.pause = this.pause.bind(this);
+        this.skipToTime = this.skipToTime.bind(this);
 
         this.handleCanPlay = this.handleCanPlay.bind(this);
         this.handleDurationChange = this.handleDurationChange.bind(this);
@@ -80,7 +85,6 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         this.handleMouseUp = this.handleMouseUp.bind(this);
         this.handleScrub = this.handleScrub.bind(this);
         this.handleProgressClick = this.handleProgressClick.bind(this);
-        this.updateVideoTime = this.updateVideoTime.bind(this);
         this.findPrimaryVideo = this.findPrimaryVideo.bind(this);
         this.isVideoReady = this.isVideoReady.bind(this);
         this.handleKeyUp = this.handleKeyUp.bind(this);
@@ -154,7 +158,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         });
     }
 
-    handleCanPlay(res: { name: string, isReady: boolean, readyState: number, videoNode: HTMLVideoElement }) {
+    handleCanPlay(res: { name: string, isReady: boolean, readyState: number }) {
         const videoCopy = this.state.video && {...this.state.video[res.name]};
 
         this.setState({
@@ -163,8 +167,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                 [res.name]: {
                     ...videoCopy,
                     ready: res.isReady,
-                    readyState: res.readyState,
-                    videoNode: res.videoNode
+                    readyState: res.readyState
                 }
             }
         }, () => {
@@ -227,13 +230,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     }
 
     handleProgressClick(res: { currentTime: number }) {
-        this.setState(() => {
-            this.updateVideoTime({ currentTime: res.currentTime });
-
-            return {
-                currentTime: res.currentTime
-            };
-        });
+        this.skipToTime(res.currentTime);
     }
 
     handleMouseDown() {
@@ -246,12 +243,9 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
 
     handleMouseUp(res?: { currentTime: number }) {
         this.setState({
-            playing: true
+            playing: true,
+            
         });
-
-        if (res) {
-            this.updateVideoTime({ currentTime: res.currentTime }, true);
-        }
     }
 
     handleScrub(res: { currentTime: number }) {
@@ -274,11 +268,6 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             videoProgress: percent,
             currentTime: res.currentTime
         });
-    }
-
-    restart(e?: any) {
-        e.stopPropagation();
-        this.updateVideoTime({ currentTime: 0 }, true);
     }
 
     render () {
@@ -318,6 +307,10 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                             name={video.key}
                             video={video}
                             timeLabel={videosCount && videosCount > 1 ? true : false}
+
+                            play={this.state.playing || false}
+                            skipToTime={this.state.skipToTime || 0}
+
                             handleClick={this.togglePlay}
                             handleCanPlay={this.handleCanPlay}
                             handleDurationChange={this.handleDurationChange}
@@ -347,6 +340,42 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         );
     }
 
+    play() {
+        this.setState({
+            playing: true
+        });
+    }
+
+    pause() {
+        this.setState({
+            playing: false
+        });
+    }
+
+    togglePlay(type?: 'play' | 'pause') {
+        if (!this.state.ready) {
+            return;
+        }
+
+        if (this.state.playing || type === 'play') {
+            this.pause();
+        } else {
+            this.play();
+        }
+    }
+
+    skipToTime(time: number) {
+        this.setState({
+            skipToTime: time
+        });
+    }
+
+    restart(e?: any) {
+        e.stopPropagation();
+        this.skipToTime(0);
+        this.play();
+    }
+
     resetState() {
         this.setState({
             playing: false,
@@ -360,11 +389,15 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     }
 
     handleKeyUp(e: any) {
-        if (this.state.ready === false) {
+        if (!this.state.ready) {
             return;
         }
 
         e.preventDefault();
+
+        if ([32, 37, 39].indexOf(e.keyCode) === -1) {
+            return;
+        }
 
         this.focusablePlayer.focus();
         let skip = this.state.currentTime || 0;
@@ -387,75 +420,12 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         }
 
         if (updateTime) {
-            this.updateVideoTime({ currentTime: skip }, updateTime);
+            this.skipToTime(skip);
         }
     }
 
     handleVideoMouseLeave(e: any) {
         this.focusablePlayer.blur();
-    }
-
-    updateVideoTime(res: {currentTime: number}, play?: boolean) {
-        if (!this.state.ready) {
-            return;
-        }
-
-        // programaticly update currentTime of video(s)
-        Object
-        .keys(this.state.video)
-        .forEach((name: string) => {
-            if (this.state.video !== undefined) {
-                // TODO: provést kontrolu pozice vs. délky videa
-                const { videoNode } = this.state.video[name];
-
-                if (res.currentTime >= videoNode.duration) {
-                    videoNode.currentTime = videoNode.duration;
-                    videoNode.pause();
-                } else {
-                    videoNode.currentTime = res.currentTime;
-                    if (play) {
-                        videoNode.play();
-                    }
-                }
-            }
-        });
-    }
-
-    togglePlay(type?: 'play' | 'pause') {
-        if (!this.state.ready) {
-            return;
-        }
-
-        // toggle play/pause of video(s)
-        Object
-        .keys(this.state.video)
-        .forEach((name: string) => {
-            if (this.state.video !== undefined) {
-                const { videoNode } = this.state.video[name];
-                const isPlaying = !videoNode.paused && !videoNode.ended && videoNode.readyState > 0;
-
-                if (videoNode.currentTime >= videoNode.duration) {
-                    videoNode.currentTime = videoNode.duration;
-                    videoNode.pause();
-                } else {
-                    if (type === 'play') {
-                        if (!isPlaying) {
-                            videoNode.play();
-                        }
-                    } else if (type === 'pause') {
-                        videoNode.pause();
-                    } else {
-                        if (videoNode.paused) {
-                            videoNode.play();
-                        } else {
-                            if (isPlaying) {
-                                videoNode.pause();
-                            }
-                        }
-                    }
-                }
-            }
-        });
     }
 
     isVideoReady() {
