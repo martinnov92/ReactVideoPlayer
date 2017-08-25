@@ -39,11 +39,14 @@ interface PlayerState {
 }
 
 // TODO:
-// [ ] when new video is added, start from currentTime + play video
+// [ ] rename playlist to video => same as before
+// [ ] vizuálně odlišit živé vysílání od normálních videí
 // [ ] display currentTime / duration when 2 videos in tooltip, when hover over remaining time in progress bar
 // [ ] add more sources for different types of supported files
 
 // DONE:
+// [x] when new video is added, start from currentTime + play video
+// [x] save videos/videoNode correctly, now when I change from 2 video to one, both videos are kept in state and playing
 // [x] stop playing when currentTime is bigger then duration
 // [x] add props for handleScrub,...
 // [x] restart fn, skip fn, handleKeyDown fn
