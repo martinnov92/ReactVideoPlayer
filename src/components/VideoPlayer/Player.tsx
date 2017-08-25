@@ -104,6 +104,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     componentWillReceiveProps(nextProps: PlayerProps) {
         if (nextProps.playlist.length !== this.props.playlist.length) {
             this.getCountOfVideos(nextProps.playlist.length);
+            this.skipToTime(this.state.currentTime || 0);
         }
     }
 
@@ -137,9 +138,10 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
 
     /**
      * VIDEO EVENTS
+     * https://www.w3schools.com/tags/av_event_canplay.asp
      */
-    // https://www.w3schools.com/tags/av_event_canplay.asp
-    handleDurationChange(res: { name: string, duration: number }) {
+    handleDurationChange(res: { name: string, duration: number }, del: boolean = false) {
+        const videoCopy = {...this.state.video};
         const videosInState = Object.keys(this.state.video).length;
         const videosCountMatch =
             (this.state.videosCount === videosInState) && this.state.primaryVideo !== res.name;
@@ -148,9 +150,14 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             return;
         }
 
+        if (del) {
+            // delete unmounted video
+            videoCopy[res.name] = undefined;
+        }
+
         this.setState({
             video: {
-                ...this.state.video as any,
+                ...videoCopy,
                 [res.name]: {
                     duration: res.duration
                 }
@@ -343,7 +350,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                             timeLabel={videosCount && videosCount > 1 ? true : false}
 
                             play={this.state.playing || false}
-                            skipToTime={this.state.skipToTime || 0}
+                            skipToTime={this.state.skipToTime}
 
                             handleClick={this.togglePlay}
                             handleCanPlay={this.handleCanPlay}
@@ -398,9 +405,13 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         }
     }
 
-    skipToTime(time: number) {
+    skipToTime(time: number, callback?: Function) {
         this.setState({
             skipToTime: time
+        }, () => {
+            if (typeof callback === 'function') {
+                callback();
+            }
         });
     }
 

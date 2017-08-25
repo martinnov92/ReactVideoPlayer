@@ -7,9 +7,9 @@ interface VideoType {
 }
 
 interface CanPlayInterface {
-    name: string;
-    isReady: boolean;
-    readyState: number;
+    name?: string;
+    isReady?: boolean;
+    readyState?: number;
 }
 
 interface VideoProps {
@@ -21,7 +21,7 @@ interface VideoProps {
 
     handleClick?: () => void;
     handleCanPlay?: (res: CanPlayInterface) => void;
-    handleDurationChange?: (res: { name: string, duration: number}) => void;
+    handleDurationChange?: (res?: { name?: string, duration?: number}, del?: boolean) => void;
     handleTimeUpdate?: (res: { name: string, currentTime: number }) => void;
     handlePlaying?: (res: { name: string, playing: boolean }) => void;
     handleProgress?: (res: { name: string, percent: number }) => void;
@@ -44,6 +44,19 @@ export class Video extends React.PureComponent<VideoProps, any> {
         this.handleTimeUpdate = this.handleTimeUpdate.bind(this);
         this.handlePlaying = this.handlePlaying.bind(this);
         this.handleProgress = this.handleProgress.bind(this);
+    }
+
+    componentDidMount() {
+        if (this.props.play) {
+            if (this.props.skipToTime) {
+                if (this.props.skipToTime > this.video.duration) {
+                    this.video.currentTime = this.video.duration;
+                } else {
+                    this.video.currentTime = this.props.skipToTime;
+                    this.video.play();
+                }
+            }
+        }
     }
 
     componentWillReceiveProps(nextProps: VideoProps) {
@@ -70,6 +83,12 @@ export class Video extends React.PureComponent<VideoProps, any> {
         }
 
         return false;
+    }
+
+    componentWillUnmount() {
+        if (this.props.handleDurationChange) {
+            this.props.handleDurationChange({ name: this.props.name }, true);
+        }
     }
 
     handleDurationChange() {
@@ -139,7 +158,10 @@ export class Video extends React.PureComponent<VideoProps, any> {
 
         // buffered end - return value in sec
         // buffered.length - number of time ranges in the object
-        const bufferEnd = video.buffered.end(video.buffered.length - 1);
+        let bufferEnd = 0;
+        if (video.buffered.length > 0) {
+            bufferEnd = video.buffered.end(video.buffered.length - 1);
+        }
         const duration = video.duration;
 
         if (duration > 0) {

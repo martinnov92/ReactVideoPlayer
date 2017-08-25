@@ -17,9 +17,14 @@ class App extends React.Component<{}, any> {
     }
   }
 
-  handleClick() {
-    const videos = [...this.state.videos];
-    videos.push({key: 'video2', mp4: video });
+  handleClick(add: boolean) {
+    let videos = [...this.state.videos];
+
+    if (add) {
+      videos.push({key: 'video2', mp4: video });
+    } else {
+      videos = [ {key: 'video', mp4: video2 } ];
+    }
 
     this.setState({
       videos
@@ -31,7 +36,8 @@ class App extends React.Component<{}, any> {
     return (
       <div className="App">
         <Player playlist={this.state.videos} />
-        <button onClick={() => this.handleClick()}>Přidat video</button>
+        <button onClick={() => this.handleClick(true)}>Přidat video</button>
+        <button onClick={() => this.handleClick(false)}>Odebrat video</button>
       </div>
     );
   }
