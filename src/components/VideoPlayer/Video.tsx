@@ -47,14 +47,11 @@ export class Video extends React.PureComponent<VideoProps, any> {
     }
 
     componentDidMount() {
-        if (this.props.play) {
-            if (this.props.skipToTime) {
-                if (this.props.skipToTime > this.video.duration) {
-                    this.video.currentTime = this.video.duration;
-                } else {
-                    this.video.currentTime = this.props.skipToTime;
-                    this.video.play();
-                }
+        if (this.props.skipToTime) {
+            if (this.props.skipToTime > this.video.duration) {
+                this.video.currentTime = this.video.duration;
+            } else {
+                this.video.currentTime = this.props.skipToTime;
             }
         }
     }
@@ -93,14 +90,14 @@ export class Video extends React.PureComponent<VideoProps, any> {
 
     handleDurationChange() {
         // update video duration
-        const videoDuration = this.video.duration;
+        const { duration } = this.video;
         const { name } = this.props;
 
         if (this.props.handleDurationChange) {
-            this.props.handleDurationChange({ name, duration: videoDuration });
+            this.props.handleDurationChange({ name, duration });
         }
 
-        return { name, duration: videoDuration };
+        return { name, duration };
     }
 
     handleCanPlay() {
@@ -178,12 +175,6 @@ export class Video extends React.PureComponent<VideoProps, any> {
     render() {
         const { video } = this.props;
 
-        if (this.video) {
-            if (this.video.ended && this.video.currentTime === this.video.duration) {
-                // return null;
-            }
-        }
-        console.log('Video', this);
         return (
             <div
                 onClick={this.props.handleClick}

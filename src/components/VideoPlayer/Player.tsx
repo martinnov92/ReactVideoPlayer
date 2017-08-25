@@ -104,6 +104,10 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
     componentWillReceiveProps(nextProps: PlayerProps) {
         if (nextProps.playlist.length !== this.props.playlist.length) {
             this.getCountOfVideos(nextProps.playlist.length);
+            this.pause();
+            this.setState({
+                ready: false
+            });
             this.skipToTime(this.state.currentTime || 0);
         }
     }
@@ -142,30 +146,22 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
      */
     handleDurationChange(res: { name: string, duration: number }, del: boolean = false) {
         const videoCopy = {...this.state.video};
-        const videosInState = Object.keys(this.state.video).length;
-        const videosCountMatch =
-            (this.state.videosCount === videosInState) && this.state.primaryVideo !== res.name;
-
-        if (videosCountMatch) {
-            return;
-        }
 
         if (del) {
             // delete unmounted video
-            videoCopy[res.name] = undefined;
+            videoCopy[res.name] = {};
         }
 
         this.setState({
             video: {
                 ...videoCopy,
                 [res.name]: {
+                    ...videoCopy[res.name],
                     duration: res.duration
                 }
             }
         }, () => {
-            if (!videosCountMatch) {
-                this.findPrimaryVideo();
-            }
+            this.findPrimaryVideo();
         });
     }
 
@@ -463,8 +459,21 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
         }
 
         // set state to ready = true when all the videos are in ready state
-        this.setState({
-            ready
+        this.setState(() => {
+            const { currentTime } = this.state;
+            if (ready && (currentTime && currentTime > 0)) {
+                // video has currentTime > 0 => video has been played
+                // set ready and set playing to true;
+                return {
+                    ready,
+                    playing: true
+                };
+            }
+            // if currentTime was 0
+            // => video has not been play => only set ready
+            return {
+                ready
+            };
         });
     }
 

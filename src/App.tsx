@@ -14,7 +14,7 @@ class App extends React.Component<{}, any> {
       videos: [
         {key: 'video', mp4: video2 }
       ]
-    }
+    };
   }
 
   handleClick(add: boolean) {
