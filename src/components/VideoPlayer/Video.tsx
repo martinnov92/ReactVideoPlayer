@@ -60,13 +60,21 @@ export class Video extends React.PureComponent<VideoProps, any> {
         const { play, skipToTime } = nextProps;
 
         if (this.props.play !== play) {
-            this.video[play ? 'play' : 'pause']();
+            if (skipToTime && skipToTime > this.video.duration) {
+                if (play) {
+                    this.video.currentTime = this.video.duration;
+                    this.video.pause();
+                }
+            } else {
+                this.video[play ? 'play' : 'pause']();
+            }
         }
 
         if (this.props.skipToTime !== skipToTime) {
             if (skipToTime) {
                 if (skipToTime > this.video.duration) {
                     this.video.currentTime = this.video.duration;
+                    this.video.pause();
                 } else {
                     this.video.currentTime = skipToTime || 0;
                 }
