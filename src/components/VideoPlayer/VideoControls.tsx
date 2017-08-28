@@ -157,7 +157,9 @@ export class VideoControls extends React.PureComponent<VideoControlsProps, Video
             flexBasis: `${progress}%`
         };
 
-        const time = getDurationTime(duration - (currentTime || 0));
+        const current = getDurationTime(currentTime || 0);
+        const durationTime = getDurationTime(duration);
+        // const remaining = getDurationTime(duration - (currentTime || 0));
 
         return (
             <div className="pd-player__controls">
@@ -200,7 +202,7 @@ export class VideoControls extends React.PureComponent<VideoControlsProps, Video
                             {
                                 showTime
                                     ? null
-                                    : time
+                                    : current + ' / ' + durationTime
                             }
                         </strong>
                     </div>
