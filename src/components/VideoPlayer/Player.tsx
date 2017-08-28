@@ -39,7 +39,7 @@ interface PlayerState {
 }
 
 // TODO:
-// [ ] rename playlist to video => same as before
+// [ ] rename video to playlist
 // [ ] vizuálně odlišit živé vysílání od normálních videí
 // [ ] display currentTime / duration when 2 videos in tooltip, when hover over remaining time in progress bar
 // [ ] add more sources for different types of supported files
