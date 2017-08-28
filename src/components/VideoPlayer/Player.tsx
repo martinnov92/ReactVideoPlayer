@@ -40,6 +40,7 @@ interface PlayerState {
 
 // TODO:
 // [ ] rename video to playlist
+// [ ] handle video errors (display reload button instead of video) !!
 // [ ] vizuálně odlišit živé vysílání od normálních videí
 // [ ] display currentTime / duration when 2 videos in tooltip, when hover over remaining time in progress bar
 // [ ] add more sources for different types of supported files
