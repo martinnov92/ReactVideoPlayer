@@ -315,8 +315,7 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
             ready,
             playing,
             fullscreen,
-            primaryVideo,
-            videosCount
+            primaryVideo
         } = this.state;
         const { playlist } = this.props;
 
@@ -346,7 +345,6 @@ export class Player extends React.PureComponent<PlayerProps, PlayerState> {
                             key={video.key}
                             name={video.key}
                             video={video}
-                            timeLabel={videosCount && videosCount > 1 ? true : false}
 
                             play={this.state.playing || false}
                             skipToTime={this.state.skipToTime}

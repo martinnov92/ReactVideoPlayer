@@ -17,7 +17,6 @@ interface VideoProps {
     video: VideoType;
     play: boolean;
     skipToTime?: number;
-    timeLabel?: boolean;
 
     handleClick?: () => void;
     handleCanPlay?: (res: CanPlayInterface) => void;
@@ -30,10 +29,6 @@ interface VideoProps {
 // TODO add constant of readyState 0, 1, 2, 3
 
 export class Video extends React.PureComponent<VideoProps, any> {
-    static defaultProps = {
-        timeLabel: false
-    };
-
     video: HTMLVideoElement;
 
     constructor() {
